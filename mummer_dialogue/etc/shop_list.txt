@@ -1,0 +1,8 @@
+shopName;category;subcategory;directions;sales
+starbucks;coffee;;To get there you need to go left then straight ahead and you will find it after the second junction.;false
+Hardware electronics;electronics;;To get there you need to go to my right then straight ahead past Coffee Time after the second junction.;false
+costa;coffee;;To get there you need to go to the right corridor and its the third shop you will meet.;false
+tesco;clothing;;To get there you need to go directly to my right then turn right on the first junction.;true
+public;electronics;;To get there you need to go on either corridor and it is the last shop you will find.;false
+primark;clothing;;To get there you need to go directly to my right then turn right and then left and it is the first shop on your left.;false
+phone heaven;electronics;;To get there you need to go left then its the third shop.;true
