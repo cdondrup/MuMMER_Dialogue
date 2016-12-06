@@ -121,8 +121,8 @@ def FaceDetected(data):
     dist = 2 if dist >= 2.5 else 1
     # memory.unsubscribeToEvent("PeoplePerception/PeopleDetected", "HumanGreeter")
 
+    global foundperson
     if not foundperson:
-        global foundperson
         foundperson = True
 
         ALTracker.registerTarget("People", data.person_array[0].id)
@@ -259,6 +259,8 @@ def observeState():
 
 
 def decodeAction(nextAction):
+    global ALMemory    
+    
     try:
         if nextAction == "Greet":
             greet()
@@ -285,7 +287,6 @@ def decodeAction(nextAction):
                 ALMemory.insertData("mode", "False")
 
         # Write action taken to state
-        global ALMemory
         if actionID[nextAction] != 6:
             ALMemory.insertData("prevAct", actionID[nextAction])
     except KeyError:
