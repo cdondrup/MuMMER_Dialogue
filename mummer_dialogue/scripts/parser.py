@@ -15,14 +15,18 @@ import rospy
 from nao_interaction_msgs.msg import PersonDetectedArray
 from nao_interaction_msgs.srv import Say, SayRequest
 import rospkg
-from actionlib import SimpleActionServer
+from actionlib import SimpleActionServer, SimpleActionClient
 from mummer_dialogue.msg import dialogueAction
 from threading import Thread
-
+from pepper_goal_server.msg import GoalServerAction, GoalServerGoal
+from rosplan_knowledge_msgs.srv import KnowledgeUpdateServiceArray, KnowledgeUpdateServiceArrayRequest
+from rosplan_knowledge_msgs.msg import KnowledgeItem
+from diagnostic_msgs.msg import KeyValue
 import signal
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
+goal = None
 some_state = None
 memory = None
 chatbot = None
@@ -32,7 +36,7 @@ actionName = None
 shopList = None
 ALDialog = None
 ALMemory = None
-ALTracker = None
+#ALTracker = None
 ALSpeechRecognition = None
 pplperc = None
 
@@ -113,28 +117,34 @@ class SpeechEventModule(ALModule):
 
 ################ ROS ################
 def FaceDetected(data):
-    global dist
-    global rosMessagetimeStamp
-    rosMessagetimeStamp = data.header.stamp.to_sec()
-    # print rosMessagetimeStamp
-    dist = data.person_array[0].person.distance
-    dist = 2 if dist >= 2.5 else 1
-    # memory.unsubscribeToEvent("PeoplePerception/PeopleDetected", "HumanGreeter")
-
-    global foundperson
-    if not foundperson:
-        foundperson = True
-
-        ALTracker.registerTarget("People", data.person_array[0].id)
-        ALTracker.track("People")
-        global memory
-        global ALDialog
-        ALDialog.subscribe('my_dialog_example')
-
-        # observeState()
-        global stateThread
-        stateThread = Thread(target=observeState, args=())
-        stateThread.start()
+    for p in data.person_array:
+        if p.id == int(goal.userID):
+            rospy.loginfo("Found person '%s'" % str(p.id))
+            global dist
+            global rosMessagetimeStamp
+            rosMessagetimeStamp = data.header.stamp.to_sec()
+            # print rosMessagetimeStamp
+            dist = data.person_array[0].person.distance
+            dist = 2 if dist >= 2.5 else 1
+            # memory.unsubscribeToEvent("PeoplePerception/PeopleDetected", "HumanGreeter")
+        
+            global foundperson
+            if not foundperson:
+                foundperson = True
+        
+        #        ALTracker.registerTarget("People", data.person_array[0].id)
+        #        ALTracker.track("People")
+                global memory
+                global ALDialog
+                ALDialog.subscribe('my_dialog_example')
+        
+                # observeState()
+                global stateThread
+                stateThread = Thread(target=observeState, args=())
+                stateThread.start()
+            break
+        else:
+            rospy.logwarn("Unknown person '%s'" % str(p.id))
 
 
 def __call_service(srv_name, srv_type, req):
@@ -154,6 +164,34 @@ def __call_service(srv_name, srv_type, req):
 
 def say(text):
     __call_service("/naoqi_driver/animated_speech/say", Say, SayRequest(text=text))
+    
+
+def clean_up():
+    rospy.loginfo("End of interaction ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+    client = SimpleActionClient("/goal_server/disengage", GoalServerAction)
+    client.wait_for_server()
+    client.send_goal(GoalServerGoal())
+
+#    ALTracker.unregisterAllTargets()
+#    ALTracker.stopTracker()
+
+    req = KnowledgeUpdateServiceArrayRequest()
+    req.update_type = req.ADD_KNOWLEDGE
+    k = KnowledgeItem()
+    k.knowledge_type = KnowledgeItem.FACT
+    k.attribute_name = "engaged"
+    k.values = [
+        KeyValue(key="i", value="iid_0"),
+        KeyValue(key="t", value="hello")
+    ]
+    req.knowledge.append(k)
+    rosSubscriber.unregister()
+    __call_service(
+        __update_srv_name,
+        KnowledgeUpdateServiceArray,
+        req
+    )
+    actionServer.set_succeeded()
 
 
 #####################################
@@ -337,12 +375,7 @@ def greet():
 
 def goodbye():
     say("Have a nice day")
-
-    ALTracker.unregisterAllTargets()
-    ALTracker.stopTracker()
-
-    rosSubscriber.unregister()
-    actionServer.set_succeeded()
+    clean_up()
 
 
 def confirm():
@@ -446,16 +479,18 @@ def getDistance(data):
 
 
 def entryPoint():
+    global goal
     goal = actionServer.accept_new_goal()
+    rospy.loginfo("Start of interaction ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
     # Populate the shop list from file
     global shopList
-    global ALTracker
+#    global ALTracker
     global ALSpeechRecognition
     global ALMemory
     global ALDialog
-    global ALEngagementZones
-    global ALMotion
+#    global ALEngagementZones
+#    global ALMotion
     shopList = ShopList(path + '/etc/shop_list.txt')
 
     global foundperson
@@ -464,11 +499,11 @@ def entryPoint():
     ALSpeechRecognition = session.service("ALSpeechRecognition")
     ALMemory = session.service("ALMemory")
     ALDialog = session.service("ALDialog")
-    ALTracker = session.service("ALTracker")
+#    ALTracker = session.service("ALTracker")
     # ALEngagementZones = session.service("ALEngagementZones")
     # ALEngagementZones.setSecondLimitDistance(3.5)
     # ALEngagementZones.setFirstLimitDistance(2.5)
-    ALMotion = session.service("ALMotion")
+#    ALMotion = session.service("ALMotion")
 
     topic_content = ('topic: ~example_topic_content()\n'
                      'language: enu\n'
@@ -495,7 +530,7 @@ def entryPoint():
     ALDialog.activateTopic(topic_name)
 
     ALDialog.setLanguage("English")
-    ALMotion.setBreathEnabled('Arms', True)
+#    ALMotion.setBreathEnabled('Arms', True)
     instantiateMemory()
 
     initChatbot(path + '/etc/chatbot/eg/brain')
@@ -554,6 +589,8 @@ except RuntimeError:
 
 global SpeechEvent
 SpeechEvent = SpeechEventModule("SpeechEvent")
+
+__update_srv_name = rospy.get_param("~update_srv_name","/kcl_rosplan/update_knowledge_base_array")
 
 actionServer.start()
 rospy.spin()
