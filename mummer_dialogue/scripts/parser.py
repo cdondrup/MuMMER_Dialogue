@@ -22,6 +22,7 @@ from pepper_goal_server.msg import GoalServerAction, GoalServerGoal
 from rosplan_knowledge_msgs.srv import KnowledgeUpdateServiceArray, KnowledgeUpdateServiceArrayRequest
 from rosplan_knowledge_msgs.msg import KnowledgeItem
 from diagnostic_msgs.msg import KeyValue
+from pepper_goal_server.msg import RouteDescriptionGoalServerAction, RouteDescriptionGoalServerGoal
 import signal
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -118,8 +119,8 @@ class SpeechEventModule(ALModule):
 ################ ROS ################
 def FaceDetected(data):
     for p in data.person_array:
-        if p.id == int(goal.userID):
-            rospy.loginfo("Found person '%s'" % str(p.id))
+        if True: #p.id == int(goal.userID):
+#            rospy.loginfo("Found person '%s'" % str(p.id))
             global dist
             global rosMessagetimeStamp
             rosMessagetimeStamp = data.header.stamp.to_sec()
@@ -186,11 +187,11 @@ def clean_up():
     ]
     req.knowledge.append(k)
     rosSubscriber.unregister()
-    __call_service(
-        __update_srv_name,
-        KnowledgeUpdateServiceArray,
-        req
-    )
+#    __call_service(
+#        __update_srv_name,
+#        KnowledgeUpdateServiceArray,
+#        req
+#    )
     actionServer.set_succeeded()
 
 
@@ -386,9 +387,17 @@ def confirm():
 
 
 def giveDirections():
-    global shopList
-    print "shopName: ", ALMemory.getData("shopName")
-    say(shopList.getDirections(ALMemory.getData("shopName")))
+    say("Let me see.")
+    client = SimpleActionClient("/route_description_goal_server", RouteDescriptionGoalServerAction)
+    client.wait_for_server()
+    client.send_goal_and_wait(RouteDescriptionGoalServerGoal(shop_id=shopList.getId(ALMemory.getData("shopName"))))
+    print "########################################"
+    print "Finished description"
+    
+#    global shopList
+#    print "shopName: ", ALMemory.getData("shopName")
+#    say(shopList.getDirections(ALMemory.getData("shopName")))
+
     ALMemory.insertData("ctxTask", "")
     ALMemory.insertData("tskFilled", "False")
     ALMemory.insertData("tskCompleted", "True")
