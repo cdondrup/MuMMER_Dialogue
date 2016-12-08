@@ -7,10 +7,14 @@ Created on Tue Oct 11 14:12:21 2016
 
 
 class Shop:
-    def __init__(self, name, category, directions):
+    def __init__(self, id, name, category, directions):
+        self.id = id
         self.name = name
         self.category = category
         self.directions = directions
+
+    def getId(self):
+        return self.id
 
     def getName(self):
         return self.name

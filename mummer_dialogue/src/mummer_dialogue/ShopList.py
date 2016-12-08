@@ -16,9 +16,9 @@ class ShopList(list):
             data = np.recfromcsv(path, delimiter=';')
             rospy.loginfo(data)
             for s in data:
-                shop = Shop(s[0], s[1], s[3])
+                shop = Shop(s[0], s[1], s[2], s[4])
                 self.append(shop)
-            #                print shop.getName()
+                print shop.getName()
 
     def filteredCategory(self, cat):
         new = ShopList(empty=True)
@@ -48,6 +48,7 @@ class ShopList(list):
         return res
 
     def getDirections(self, shopName):
-        for s in self:
-            if s.getName() == shopName:
-                return s.getDirections()
+        return self.getShop(shopName).getDirections()
+                
+    def getId(self, shopName):
+        return self.getShop(shopName).getId()
