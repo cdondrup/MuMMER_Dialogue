@@ -168,31 +168,34 @@ def say(text):
     
 
 def clean_up():
-    rospy.loginfo("End of interaction ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
-    client = SimpleActionClient("/goal_server/disengage", GoalServerAction)
-    client.wait_for_server()
-    client.send_goal(GoalServerGoal())
-
-#    ALTracker.unregisterAllTargets()
-#    ALTracker.stopTracker()
-
-    req = KnowledgeUpdateServiceArrayRequest()
-    req.update_type = req.ADD_KNOWLEDGE
-    k = KnowledgeItem()
-    k.knowledge_type = KnowledgeItem.FACT
-    k.attribute_name = "engaged"
-    k.values = [
-        KeyValue(key="i", value="iid_0"),
-        KeyValue(key="t", value="hello")
-    ]
-    req.knowledge.append(k)
-    rosSubscriber.unregister()
-#    __call_service(
-#        __update_srv_name,
-#        KnowledgeUpdateServiceArray,
-#        req
-#    )
-    actionServer.set_succeeded()
+    if actionServer.is_active():
+        rospy.loginfo("End of interaction ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        client = SimpleActionClient("/goal_server/disengage", GoalServerAction)
+        client.wait_for_server()
+        client.send_goal(GoalServerGoal())
+    
+    #    ALTracker.unregisterAllTargets()
+    #    ALTracker.stopTracker()
+    
+#        req = KnowledgeUpdateServiceArrayRequest()
+#        req.update_type = req.ADD_KNOWLEDGE
+#        k = KnowledgeItem()
+#        k.knowledge_type = KnowledgeItem.FACT
+#        k.attribute_name = "engaged"
+#        k.values = [
+#            KeyValue(key="i", value="iid_0"),
+#            KeyValue(key="t", value="hello")
+#        ]
+#        req.knowledge.append(k)
+        rosSubscriber.unregister()
+    #    __call_service(
+    #        __update_srv_name,
+    #        KnowledgeUpdateServiceArray,
+    #        req
+    #    )
+        actionServer.set_succeeded()
+    else:
+        rospy.logerr("Tried to disengage while server was inactive")
 
 
 #####################################
