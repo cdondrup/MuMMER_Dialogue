@@ -1,8 +1,8 @@
-shop_id;shopName;category;subcategory;directions;sales;loc_x;loc_y;waypoint
-0;starbucks;coffee;;To get to %s you need to go left then straight ahead and you will find it after the second junction.;false;-4;-4;none
-1;Hardware electronics;electronics;;To get to %s you need to go to my right then straight ahead past Coffee Time after the second junction.;false;-4;-4;none
-2;costa;coffee;;To get to %s you need to go to the right corridor and its the third shop you will meet.;false;4;4;none
-3;tesco;clothing;;To get to %s you need to go directly to my right then turn right on the first junction.;true;4;4;none
-4;public;electronics;;To get to %s you need to go on either corridor and it is the last shop you will find.;false;-4;4;none
-5;primark;clothing;;To get to %s you need to go directly to my right then turn right and then left and it is the first shop on your left.;false;4;-4;none
-6;phone heaven;electronics;;To get to %s you need to go left then its the third shop.;true;4;-4;none
+shop_id;shopName;category;subcategory;directions;sales;loc_x;loc_y;waypoint;voucher_app;voucher_offer
+0;starbucks;coffee;;To get to %s you need to go left then straight ahead and you will find it after the second junction.;false;-4;-4;none;"showqrcode-82bd8b/behavior_1";horrible coffee
+1;Hardware electronics;electronics;;To get to %s you need to go to my right then straight ahead past Coffee Time after the second junction.;false;-4;-4;none;"showqrcode-82bd8b/behavior_1";duct tape
+2;costa;coffee;;To get to %s you need to go to the right corridor and its the third shop you will meet.;false;4;4;none;"showqrcode-82bd8b/behavior_1";over priced coffee
+3;tesco;clothing;;To get to %s you need to go directly to my right then turn right on the first junction.;true;4;4;none;"showqrcode-82bd8b/behavior_1";christmas jumpers
+4;public;electronics;;To get to %s you need to go on either corridor and it is the last shop you will find.;false;-4;4;none;"showqrcode-82bd8b/behavior_1";soldering irons
+5;primark;clothing;;To get to %s you need to go directly to my right then turn right and then left and it is the first shop on your left.;false;4;-4;none;"showqrcode-82bd8b/behavior_1";child labour fashion
+6;phone heaven;electronics;;To get to %s you need to go left then its the third shop.;true;4;-4;none;"showqrcode-82bd8b/behavior_1";over priced phones with an apple on them
