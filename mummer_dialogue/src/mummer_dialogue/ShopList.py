@@ -5,20 +5,20 @@ Created on Tue Oct 11 13:49:48 2016
 @author: elveleg
 """
 
-import numpy as np
 from Shop import Shop
-import rospy
 
 
 class ShopList(list):
-    def __init__(self, db, empty=False):
+    def __init__(self, db=None, empty=False):
         if not empty:
             for entry in db:
-                shop = Shop(entry['shop_id'], entry['shopName'], entry['category'], entry['directions'], entry['sales'])          
-#            data = np.recfromcsv(path, delimiter=';')
-#            rospy.loginfo(data)
-#            for s in data:
-#                shop = Shop(s[0], s[1], s[2], s[4], s[5])
+                shop = Shop(
+                    int(entry['shop_id']), 
+                    entry['shopName'], 
+                    entry['category'],
+                    entry['directions'], 
+                    self.str2bool(entry['sales'])
+                )
                 self.append(shop)
                 print shop.getName()
 
@@ -68,3 +68,12 @@ class ShopList(list):
             new.append(s.getName())
 
         return new
+    
+    def str2bool(self, s):
+        s = s.lower()
+        if s == 'true':
+            return True
+        elif s == 'false':
+            return False
+        else:
+            raise ValueError("Cannot convert {} to a bool".format(s))

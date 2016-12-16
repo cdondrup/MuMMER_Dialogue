@@ -406,7 +406,7 @@ def giveDirections():
     say("Let me see.")
     client = SimpleActionClient("/route_description_goal_server", RouteDescriptionGoalServerAction)
     client.wait_for_server()
-    client.send_goal_and_wait(RouteDescriptionGoalServerGoal(lid=shopList.getId(ALMemory.getData("shopName"))))
+    client.send_goal_and_wait(RouteDescriptionGoalServerGoal(shop_id=shopList.getId(ALMemory.getData("shopName"))))
     print "########################################"
     print "Finished description"
 
@@ -529,14 +529,12 @@ def entryPoint():
     rospy.loginfo("Start of interaction ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
     # Populate the shop list from file
-    global shopList
     #    global ALTracker
     global ALSpeechRecognition
     global ALMemory
     global ALDialog
     #    global ALEngagementZones
     #    global ALMotion
-    shopList = ShopList(result)
 
     global foundperson
     foundperson = False
@@ -637,12 +635,7 @@ db = client[db_name]
 collection_name = rospy.get_param("~collection_name", "idea_park")
 semantic_map_name = rospy.get_param("~semantic_map_name")
 
-result = db[collection_name].find(
-    {
-        "semantic_map_name": semantic_map_name
-    }
-)
-
+shopList = ShopList(db[collection_name].find({"semantic_map_name": semantic_map_name}))
 
 # some_state = state(tskC, tskF, prevA, dist, ctx, usrEng, mode, timeout, usrTerm, bye, usrEngC, lowConf, turn)
 # some_state = state(False, False, 2, 1, '', True, False, False, False, False, False, False, False)
