@@ -7,11 +7,12 @@ Created on Tue Oct 11 14:12:21 2016
 
 
 class Shop:
-    def __init__(self, id, name, category, directions):
+    def __init__(self, id, name, category, directions, sales):
         self.id = id
         self.name = name
         self.category = category
         self.directions = directions
+        self.sales = sales
 
     def getId(self):
         return self.id
@@ -24,3 +25,6 @@ class Shop:
 
     def getDirections(self):
         return self.directions
+
+    def getSales(self):
+        return self.sales

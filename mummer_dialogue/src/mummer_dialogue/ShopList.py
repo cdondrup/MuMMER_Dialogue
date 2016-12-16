@@ -11,12 +11,14 @@ import rospy
 
 
 class ShopList(list):
-    def __init__(self, path='', empty=False):
+    def __init__(self, db, empty=False):
         if not empty:
-            data = np.recfromcsv(path, delimiter=';')
-            rospy.loginfo(data)
-            for s in data:
-                shop = Shop(s[0], s[1], s[2], s[4])
+            for entry in db:
+                shop = Shop(entry['shop_id'], entry['shopName'], entry['category'], entry['directions'], entry['sales'])          
+#            data = np.recfromcsv(path, delimiter=';')
+#            rospy.loginfo(data)
+#            for s in data:
+#                shop = Shop(s[0], s[1], s[2], s[4], s[5])
                 self.append(shop)
                 print shop.getName()
 
@@ -52,3 +54,17 @@ class ShopList(list):
                 
     def getId(self, shopName):
         return self.getShop(shopName).getId()
+
+    def filteredSales(self):
+        new = ShopList(empty=True)
+        for s in self:
+            if s.getSales():
+                new.append(s)
+        return new
+
+    def getShops(self):
+        new = []
+        for s in self:
+            new.append(s.getName())
+
+        return new
