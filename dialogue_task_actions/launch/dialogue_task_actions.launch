@@ -1,0 +1,11 @@
+<launch>
+  <arg name="semantic_map_name"/>
+  
+  <node pkg="dialogue_task_actions" type="route_description.py" name="route_description_goal_server" output="screen" respawn="true">
+    <param name="semantic_map_name" value="$(arg semantic_map_name)" type="string"/>
+  </node>
+  <node pkg="dialogue_task_actions" type="give_voucher.py" name="give_voucher" output="screen" respawn="true">
+    <param name="semantic_map_name" value="$(arg semantic_map_name)" type="string"/>
+  </node>
+  <node pkg="dialogue_task_actions" type="take_picture.py" name="take_picture" output="screen" respawn="true"/>
+</launch>
