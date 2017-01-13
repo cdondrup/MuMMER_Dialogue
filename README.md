@@ -1,5 +1,5 @@
 # MuMMER Dialogue
-This is the dialogue module for MuMMER, which fires up once Pepper reaches the selected to interact user. It follows the same behaviour as in [https://www.youtube.com/watch?v=hKjLpCEzzX8] (currently), combining a chotbot with an MDP learned policy for action selection.
+This is the dialogue module for MuMMER, which fires up once Pepper reaches the selected to interact user. It follows the same behaviour as in [this video](https://www.youtube.com/watch?v=hKjLpCEzzX8) (currently), combining a chotbot with an MDP learned policy for action selection.
 
 ### Structure:
 - **action:** The ros action for invoking the dialogue
