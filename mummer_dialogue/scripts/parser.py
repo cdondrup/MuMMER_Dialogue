@@ -22,10 +22,10 @@ from pepper_goal_server.msg import GoalServerAction, GoalServerGoal
 from rosplan_knowledge_msgs.srv import KnowledgeUpdateServiceArray, KnowledgeUpdateServiceArrayRequest
 from rosplan_knowledge_msgs.msg import KnowledgeItem
 from diagnostic_msgs.msg import KeyValue
-from pepper_goal_server.msg import RouteDescriptionGoalServerAction, RouteDescriptionGoalServerGoal
+from dialogue_task_actions.msg import RouteDescriptionGoalServerAction, RouteDescriptionGoalServerGoal
 import signal
-from pepper_task_actions.msg import GiveVoucherAction, GiveVoucherGoal
-from pepper_task_actions.msg import EmptyAction, EmptyGoal
+from dialogue_task_actions.msg import GiveVoucherAction, GiveVoucherGoal
+from dialogue_task_actions.msg import EmptyAction, EmptyGoal
 from pymongo import MongoClient
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
