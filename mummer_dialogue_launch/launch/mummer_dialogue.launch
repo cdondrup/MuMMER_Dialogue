@@ -1,10 +1,12 @@
 <launch>
   <arg name="semantic_map_name"/>
+  <arg name="nao_ip" default="$(optenv NAO_IP)" />
+  <arg name="nao_port" default="$(optenv NAO_PORT 9559)" />
   
   <include file="$(find dialogue_task_actions)/launch/dialogue_task_actions.launch">
     <arg name="semantic_map_name" value="$(arg semantic_map_name)" />    
   </include>
-  <node name="mummer_dialogue" pkg="mummer_dialogue" type="parser.py" output="screen" respawn="true">
+  <node name="mummer_dialogue" pkg="mummer_dialogue" type="parser.py" args="--ip $(arg nao_ip) --port $(arg nao_port)" output="screen" respawn="true">
     <param name="semantic_map_name" type="string" value="$(arg semantic_map_name)"/>
   </node>
   
