@@ -200,6 +200,7 @@ def clean_up():
     else:
         rospy.logerr("Tried to disengage while server was inactive")
 
+#TODO: reset memory and state (to avoid saying stuff after goodbye)
 
 #####################################
 
