@@ -1,9 +1,9 @@
 #! /usr/bin/env python
 
+import qi
 import json
 import time, sys
 import random
-import qi
 import argparse
 from naoqi import ALProxy
 from naoqi import ALBroker
@@ -113,11 +113,6 @@ class SpeechEventModule(ALModule):
 
         global userStoppedTalking
         userStoppedTalking = True
-
-        # If no task was given or the user did not say goodbye, assume the user is chatting
-        # if not str2bool(ALMemory.getData('tskFilled')):
-        #     ALMemory.insertData('usrEngChat', 'True')
-
 
 ################ ROS ################
 def FaceDetected(data):
@@ -316,7 +311,7 @@ def decodeAction(nextAction):
         if nextAction == "Greet":
             greet()
         elif nextAction == "Chat":
-            chat(lastUsrInput)
+            chat(lastUsrInput, False) # Remove "True" or set to False to enable chatbot
         elif nextAction == "wait":
             wait()
         elif nextAction == "taskConsume":
@@ -376,13 +371,16 @@ def flipTurn():
     ALMemory.insertData("turntaking", bool2str(turn))
 
 
-def chat(sentence):
+def chat(sentence, disable = False):
     global chatbot
 
     # print sentence
     print lastUsrInput
     try:
-        say(str(chatbot.reply("localuser", str(sentence))))
+        if not disable:
+            say(str(chatbot.reply("localuser", str(sentence))))
+        else:
+            say("I am sorry, I am afraid I do not understand.")
     except RuntimeError:
         print "error in chatbot"
 
@@ -461,15 +459,12 @@ def wait():
     global memory
     global userStoppedTalking
     global timeout
-    tStart = time.time()  # Start time counter for timeout
 
     # Assume that the user is chatting unless recognized otherwise
     ALMemory.insertData('usrEngChat', 'True')
 
     ALMemory.insertData("tskCompleted", "False")
     ALMemory.insertData("timeout", "False")
-    # memory.subscribeToEvent("EngagementZones/PersonMovedAway", "EngagementZone", "onMoveAway")
-    # memory.subscribeToEvent("EngagementZones/PersonApproached", "EngagementZone", "onMoveCloser")
     memory.subscribeToEvent("Dialog/LastInput", "SpeechEvent", "onSpeechDetected")
     ALDialog.subscribe('my_dialog_example')
     while True:
@@ -479,10 +474,6 @@ def wait():
             userStoppedTalking = False
             break
 
-        # if time.time() > tStart + 10:
-        #     ALMemory.insertData("timeout", "True")
-        #     print "timeout"
-        #     break
 
         if dist == 2:
             print "walked away"
@@ -516,7 +507,6 @@ def getDistance(data):
             distance = 1
         elif data[1][0][1] > 2.5:
             distance = 2
-            #            ALMemory.insertData("timeout","False")
 
     except TypeError:
         distance = 1
@@ -530,48 +520,39 @@ def entryPoint():
     rospy.loginfo("Start of interaction ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 
     # Populate the shop list from file
-    #    global ALTracker
     global ALSpeechRecognition
     global ALMemory
     global ALDialog
-    #    global ALEngagementZones
-    #    global ALMotion
-
     global foundperson
     foundperson = False
 
     ALSpeechRecognition = session.service("ALSpeechRecognition")
     ALMemory = session.service("ALMemory")
     ALDialog = session.service("ALDialog")
-    #    ALTracker = session.service("ALTracker")
-    # ALEngagementZones = session.service("ALEngagementZones")
-    # ALEngagementZones.setSecondLimitDistance(3.5)
-    # ALEngagementZones.setFirstLimitDistance(2.5)
-    #    ALMotion = session.service("ALMotion")
 
     topic_content = ('topic: ~example_topic_content()\n'
                      'language: enu\n'
-                     'concept:(bye) [bye Goodbye farewell "see you later"]\n'
+                     'concept:(bye) [bye Goodbye farewell "see you later" "see you" ]\n'
                      'concept:(coffee) [coffee cappuccino latte espresso americano]\n'
                      'concept:(shop) [starbucks costa public "hardware electronics" tesco primark "phone heaven"]\n'
                      'concept:(electronics) [iPhone Samsung case adapter television TV charger mobile phone]\n'
                      'concept:(clothing) [shoes jacket "t-shirt" belt jeans trousers shirt coat underwear clothing]\n'
                      'concept:(selfie) [selfie picture photo photograph]\n'
                      'concept:(voucher) [voucher sale sales bargain bargains "special offers"]\n'
-                     'u: (* ~voucher {*} _~shop) $tskFilled=True $ctxTask=voucherANDshop $shopName=$1 $usrEngChat=False\n'
+                     'u: (* ~voucher * _~shop) $tskFilled=True $ctxTask=voucherANDshop $shopName=$1 $usrEngChat=False\n'
                      'u: (* ~voucher) $tskFilled=True $ctxTask=voucher $usrEngChat=False $slotMissing=True\n'
-                     '  u1: (* _~shop) $tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $slotMissing=False $shopName=$1 $slotMissing==True\n'
-                     'u: (* ~selfie) $tskFilled=True $ctxTask=selfie $usrEngChat=False\n'
-                     'u: ([e:FrontTactilTouched e:MiddleTactilTouched e:RearTactilTouched]) $ctxTask=voucherANDshop $slotMissing=False  testing $slotMissing==True\n'
+                     #'  u1: (* _~shop) $tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $slotMissing=False $shopName=$1 $slotMissing==True\n'
+                     'u: (* ~selfie *) $tskFilled=True $ctxTask=selfie $usrEngChat=False\n'
+                     #'u: ([e:FrontTactilTouched e:MiddleTactilTouched e:RearTactilTouched]) $ctxTask=voucherANDshop $slotMissing=False  testing $slotMissing==True\n'
                      'u: (Open the Pod bay doors) I am sorry Dave, I am afraid I can not do that.\n'
                      'u: (* ~coffee) $tskFilled=True $ctxTask=coffee $usrEngChat=False\n'
                      'u: (* ~electronics) $tskFilled=True $ctxTask=electronics $usrEngChat=False\n'
                      'u: (* ~clothing) $tskFilled=True $ctxTask=clothing $usrEngChat=False\n'
                      'u: (* ~bye) $bye=True $usrEngChat=False \n'
-                     # 'u: (e:Dialog/NotUnderstood) $usrEngChat=True \n'
+                     #'u: (e:Dialog/NotUnderstood) $usrEngChat=True \n'
                      'u: (_*) $Dialog/LastInput=$1 \n'
                      'u: (e:Dialog/NotSpeaking5) $timeout=True $usrEngChat=False \n'
-                     'u: (* _~shop) $tskFilled=True $ctxTask=directions $shopName=$1 $usrEngChat=False $slotMissing==False\n')
+                     'u: (* _~shop) ["$slotMissing=False $tskFilled=True $ctxTask=directions $shopName=$1 $usrEngChat=False $slotMissing==False" "$tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $slotMissing=False $shopName=$1"]\n')
 
     # Loading the topics directly as text strings
     topic_name = ALDialog.loadTopicContent(topic_content)
@@ -592,7 +573,7 @@ def entryPoint():
     pplperc = ALProxy("ALPeoplePerception")
 
     global rosSubscriber
-    rosSubscriber = rospy.Subscriber('/naoqi_driver_node/people_detected', PersonDetectedArray, FaceDetected)
+    rosSubscriber = rospy.Subscriber('/naoqi_driver_node/people_detected', PersonDetectedArray, FaceDetected, queue_size=1)
 
 
 rospy.init_node('DialogueStart', anonymous=True)
