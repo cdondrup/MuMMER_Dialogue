@@ -27,6 +27,7 @@ import signal
 from dialogue_task_actions.msg import GiveVoucherAction, GiveVoucherGoal
 from dialogue_task_actions.msg import EmptyAction, EmptyGoal
 from pymongo import MongoClient
+import flask, requests
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -287,76 +288,79 @@ def initChatbot(path):
     chatbot.load_directory(path)
     chatbot.sort_replies()
 
-
 #    print chatbot.reply("localuser", "Hello")
 
 def observeState():
     global some_state
-
-    print ALMemory.getData("Dialog/LastInput")
-    some_state = generateState()
-    some_state.printState()
-
-    global nextAction
-    nextAction = action(some_state)
-    print "Action selected: ", nextAction
-
-    decodeAction(nextAction)
-
-
-def decodeAction(nextAction):
     global ALMemory
+    global nextAction
+    global loop_exit
+    loop_exit = False
+    
+    while not loop_exit:
+        print "user utterance: ", ALMemory.getData("Dialog/LastInput")
+        some_state = generateState()
+        some_state.printState()
 
-    try:
-        if nextAction == "Greet":
-            greet()
-        elif nextAction == "Chat":
-            chat(lastUsrInput, False) # Remove "True" or set to False to enable chatbot
-        elif nextAction == "wait":
-            wait()
-        elif nextAction == "taskConsume":
-            taskConsume()
-        elif nextAction == "giveDirections":
-            giveDirections()
-        elif nextAction == "Goodbye":
-            goodbye()
-            return
-        elif nextAction == "confirm":
-            confirm()
-        elif nextAction == "requestTask":
-            requestTask()
-        elif nextAction == "requestShop":
-            requestShop()
+        nextAction = action(some_state)
+        print "Action selected: ", nextAction
+        print "slotMissing: ", ALMemory.getData("slotMissing")
+    
+    #    decodeAction(nextAction)
+    #    print "observe state: end"    
+    #    
+    #def decodeAction(nextAction):
+       
+        try:
+            if nextAction == "Greet":
+                greet()
+            elif nextAction == "Chat":
+                chat(lastUsrInput, False) # Remove "True" or set to False to enable chatbot
+            elif nextAction == "wait":
+                wait()
+            elif nextAction == "taskConsume":
+                taskConsume()
+            elif nextAction == "giveDirections":
+                giveDirections()
+            elif nextAction == "Goodbye":
+                goodbye()
+                return
+            elif nextAction == "confirm":
+                confirm()
+            elif nextAction == "requestTask":
+                requestTask()
+            elif nextAction == "requestShop":
+                requestShop()
+    
+            if not turn:
+                if nextAction == "Chat":
+                    ALMemory.insertData("mode", "True")
+                else:
+                    ALMemory.insertData("mode", "False")
+    
+            # Write action taken to state
+            if actionID[nextAction] != 6:
+                ALMemory.insertData("prevAct", actionID[nextAction])
+        except KeyError as e:
+            print "Error", e
+            print "Fallback to default action"
+    
+            if rosMessagetimeStamp + 1. < rospy.Time.now().to_sec():
+                goodbye()
+                return
+    
+            chat('fallback utterance')
+            if not turn:
+                print "falling back to backup user state:"
+                pushFallbackStateToMemory()
+                print '\n'
+                continue
+    
+        print '\n'
+        flipTurn()
+#    observeState()
 
-        if not turn:
-            if nextAction == "Chat":
-                ALMemory.insertData("mode", "True")
-            else:
-                ALMemory.insertData("mode", "False")
-
-        # Write action taken to state
-        if actionID[nextAction] != 6:
-            ALMemory.insertData("prevAct", actionID[nextAction])
-    except KeyError as e:
-        print "Error", e
-        print "Fallback to default action"
-
-        if rosMessagetimeStamp + 1. < rospy.Time.now().to_sec():
-            goodbye()
-            return
-
-        chat('fallback utterance')
-        if not turn:
-            print "falling back to backup user state:"
-            pushFallbackStateToMemory()
-            print '\n'
-            observeState()
-
-    print '\n'
-    flipTurn()
-    observeState()
-
-
+    
 def generateState():
     global some_state
     readMemoryState(ALMemory)
@@ -375,10 +379,13 @@ def chat(sentence, disable = False):
     global chatbot
 
     # print sentence
-    print lastUsrInput
+#    print lastUsrInput
     try:
         if not disable:
-            say(str(chatbot.reply("localuser", str(sentence))))
+#            say(str(chatbot.reply("localuser", str(sentence))))
+            p = {'question': sentence, 'sessionid': '123'}
+            r = requests.get('http://127.0.0.1:5000/api/v1.0/ask', params=p)
+            say(r.json().get('response').get('answer'))
         else:
             say("I am sorry, I am afraid I do not understand.")
     except RuntimeError:
@@ -418,7 +425,7 @@ def requestShop():
     say("There are " + str(len(shopList.filteredSales())) + " shops that have sales nearby.")
     say("These are " + shopList.filteredSales().enumShops())
     # say("Which shop would you like to get a voucher for?")
-    print shopList.filteredSales().getShops()
+    print "Shop Name: ", ALMemory.getData("shopName")
     ALMemory.insertData("ctxTask", "")
     ALMemory.insertData("tskFilled", "False")
     ALMemory.insertData("tskCompleted", "True")
@@ -536,23 +543,24 @@ def entryPoint():
                      'concept:(coffee) [coffee cappuccino latte espresso americano]\n'
                      'concept:(shop) [starbucks costa public "hardware electronics" tesco primark "phone heaven"]\n'
                      'concept:(electronics) [iPhone Samsung case adapter television TV charger mobile phone]\n'
-                     'concept:(clothing) [shoes jacket "t-shirt" belt jeans trousers shirt coat underwear clothing]\n'
+                     'concept:(clothing) [shoes jacket "t-shirt" belt jeans trousers shirt underwear clothing]\n'
                      'concept:(selfie) [selfie picture photo photograph]\n'
                      'concept:(voucher) [voucher sale sales bargain bargains "special offers"]\n'
-                     'u: (* ~voucher * _~shop) $tskFilled=True $ctxTask=voucherANDshop $shopName=$1 $usrEngChat=False\n'
-                     'u: (* ~voucher) $tskFilled=True $ctxTask=voucher $usrEngChat=False $slotMissing=True\n'
+                     'u: (_* ~voucher * _~shop) $tskFilled=True $ctxTask=voucherANDshop $shopName=$1 $usrEngChat=False $slotMissing=False\n'
+                     'u: (_* ~voucher) $tskFilled=True $ctxTask=voucher $usrEngChat=False $slotMissing=True\n'
                      #'  u1: (* _~shop) $tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $slotMissing=False $shopName=$1 $slotMissing==True\n'
-                     'u: (* ~selfie *) $tskFilled=True $ctxTask=selfie $usrEngChat=False\n'
+                     'u: (_*~selfie *) $tskFilled=True $ctxTask=selfie $usrEngChat=False\n'
                      #'u: ([e:FrontTactilTouched e:MiddleTactilTouched e:RearTactilTouched]) $ctxTask=voucherANDshop $slotMissing=False  testing $slotMissing==True\n'
-                     'u: (Open the Pod bay doors) I am sorry Dave, I am afraid I can not do that.\n'
-                     'u: (* ~coffee) $tskFilled=True $ctxTask=coffee $usrEngChat=False\n'
-                     'u: (* ~electronics) $tskFilled=True $ctxTask=electronics $usrEngChat=False\n'
-                     'u: (* ~clothing) $tskFilled=True $ctxTask=clothing $usrEngChat=False\n'
-                     'u: (* ~bye) $bye=True $usrEngChat=False \n'
+                     'u: (_*~coffee) $tskFilled=True $ctxTask=coffee $usrEngChat=False\n'
+                     'u: (_*~electronics) $tskFilled=True $ctxTask=electronics $usrEngChat=False\n'
+                     'u: (_*~clothing) $tskFilled=True $ctxTask=clothing $usrEngChat=False\n'
+                     'u: (_*~bye) $bye=True $usrEngChat=False \n'
                      #'u: (e:Dialog/NotUnderstood) $usrEngChat=True \n'
-                     'u: (_*) $Dialog/LastInput=$1 \n'
+                     'u: (_*) $Dialog/LastInput=$1 $FullSentence=$1\n'
                      'u: (e:Dialog/NotSpeaking5) $timeout=True $usrEngChat=False \n'
-                     'u: (* _~shop) ["$slotMissing=False $tskFilled=True $ctxTask=directions $shopName=$1 $usrEngChat=False $slotMissing==False" "$tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $slotMissing=False $shopName=$1"]\n')
+                     'u: (_*_~shop) ["$tskFilled=True $ctxTask=directions $shopName=$2 $usrEngChat=False $slotMissing==False" "$tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $slotMissing=False $shopName=$1"]\n'
+                     ) 
+                    
 
     # Loading the topics directly as text strings
     topic_name = ALDialog.loadTopicContent(topic_content)
@@ -620,8 +628,8 @@ semantic_map_name = rospy.get_param("~semantic_map_name")
 shopList = ShopList(db[collection_name].find({"semantic_map_name": semantic_map_name}))
 
 # some_state = state(tskC, tskF, prevA, dist, ctx, usrEng, mode, timeout, usrTerm, bye, usrEngC, lowConf, turn)
-# some_state = state(False, False, 2, 1, '', True, False, False, False, False, False, False, False)
-# print action(some_state)
+#some_state = state(False, True, 9, 1, "directions", True, False, False, False, False, False, False, False)
+#print action(some_state)
 
 # ALDialog.subscribe('my_dialog_example')
 
