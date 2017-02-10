@@ -28,6 +28,7 @@ from dialogue_task_actions.msg import GiveVoucherAction, GiveVoucherGoal
 from dialogue_task_actions.msg import EmptyAction, EmptyGoal
 from pymongo import MongoClient
 import flask, requests
+from mummer_dialogue.msg import DialogueText
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -41,6 +42,7 @@ actionName = None
 shopList = None
 ALDialog = None
 ALMemory = None
+topic_name = None
 # ALTracker = None
 ALSpeechRecognition = None
 pplperc = None
@@ -126,7 +128,7 @@ class SpeechEventModule(ALModule):
         global memory
         memory.unsubscribeToEvent("Dialog/LastInput", "SpeechEvent")
         ALDialog.unsubscribe('my_dialog_example')
-        
+
         # flipTurn()
 
         global userStoppedTalking
@@ -186,7 +188,16 @@ def __call_service(srv_name, srv_type, req):
             return s(req)
 
 
+def publish_dialogue_text(actor, text):
+    d = DialogueText()
+    d.header.stamp = rospy.Time.now()
+    d.actor = actor
+    d.text = text
+    dialoguePublisher.publish(d)
+
+
 def say(text):
+    publish_dialogue_text("robot", text)
     if logging:
         try:
             global logfile
@@ -226,6 +237,21 @@ def clean_up():
         actionServer.set_succeeded()
     else:
         rospy.logerr("Tried to disengage while server was inactive")
+        
+def shut_down():
+    if ALDialog != None:
+        # stopping the dialog engine
+        try:
+            ALDialog.unsubscribe('my_dialog_example')
+        except RuntimeError:
+            pass
+    
+        # Deactivating all topics
+        ALDialog.deactivateTopic(topic_name)
+    
+        # now that the dialog engine is stopped and there are no more activated topics,
+        # we can unload all topics and free the associated memory
+        ALDialog.unloadTopic(topic_name)
 
 #####################################
 
@@ -329,6 +355,7 @@ def observeState():
     while not loop_exit:
         print "user utterance: ", ALMemory.getData("Dialog/LastInput")
         print asrconf
+        publish_dialogue_text("human", str(ALMemory.getData("Dialog/LastInput")))
         some_state = generateState()
         some_state.printState()
 
@@ -617,6 +644,7 @@ def entryPoint():
                     
 
     # Loading the topics directly as text strings
+    global topic_name
     topic_name = ALDialog.loadTopicContent(topic_content)
 
     # Activating the loaded topics
@@ -649,7 +677,7 @@ r = rospkg.RosPack()
 path = r.get_path('mummer_dialogue')
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--ip", type=str, default="137.195.108.20",
+parser.add_argument("--ip", type=str, default="pepper",
                     help="Robot's IP address. If on a robot or a local Naoqi")
 parser.add_argument("--port", type=int, default=9559,
                     help="port number, the default value is OK in most cases")
@@ -703,6 +731,9 @@ WordEvent = WordModule("WordEvent")
 
 __update_srv_name = rospy.get_param("~update_srv_name", "/kcl_rosplan/update_knowledge_base_array")
 
+dialoguePublisher = rospy.Publisher('~dialogue_text', DialogueText, queue_size=10)
+
+rospy.on_shutdown(shut_down)
 actionServer.start()
 rospy.spin()
 
