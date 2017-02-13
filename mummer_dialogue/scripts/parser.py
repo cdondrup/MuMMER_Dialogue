@@ -50,6 +50,14 @@ rosMessagetimeStamp = None
 
 stateThread = None
 
+logfile = None
+
+#### SET TO TRUE TO ENABLE LOGGING ####
+logging = False
+
+
+startTime = None
+
 # State attributes
 tskC = False
 tskF = False
@@ -68,6 +76,7 @@ lowConf = False
 foundperson = False
 
 lastUsrInput = ''
+asrconf = []
 
 # Action dictionary
 actionID = {"taskConsume": 1, "Greet": 2, "Goodbye": 3, "Chat": 4, "giveDirections": 5, "wait": 6, "confirm": 7,
@@ -98,6 +107,14 @@ def action(state):
         pass
         # return 'Chat'
 
+class WordModule(ALModule):
+    def __init__(self, name):
+        ALModule.__init__(self, name)
+        
+    def onWordRecognized(self, value, identifier):
+        global asrconf
+        asrconf = identifier
+
 
 class SpeechEventModule(ALModule):
     """ A simple module able to react to facedetection events """
@@ -109,11 +126,18 @@ class SpeechEventModule(ALModule):
         global memory
         memory.unsubscribeToEvent("Dialog/LastInput", "SpeechEvent")
         ALDialog.unsubscribe('my_dialog_example')
-
+        
         # flipTurn()
 
         global userStoppedTalking
         userStoppedTalking = True
+        if logging:
+            try:
+                global logfile
+                logfile.write("U: " + ALMemory.getData("Dialog/LastInput") + 
+                " " + str(asrconf) + "\n")
+            except ValueError:
+                pass
 
 ################ ROS ################
 def FaceDetected(data):
@@ -163,6 +187,13 @@ def __call_service(srv_name, srv_type, req):
 
 
 def say(text):
+    if logging:
+        try:
+            global logfile
+            logfile.write("S: " + text + "\n")
+        except ValueError:
+            pass
+        
     __call_service("/naoqi_driver/animated_speech/say", Say, SayRequest(text=text))
 
 
@@ -195,8 +226,6 @@ def clean_up():
         actionServer.set_succeeded()
     else:
         rospy.logerr("Tried to disengage while server was inactive")
-
-#TODO: reset memory and state (to avoid saying stuff after goodbye)
 
 #####################################
 
@@ -299,6 +328,7 @@ def observeState():
     
     while not loop_exit:
         print "user utterance: ", ALMemory.getData("Dialog/LastInput")
+        print asrconf
         some_state = generateState()
         some_state.printState()
 
@@ -358,7 +388,6 @@ def observeState():
     
         print '\n'
         flipTurn()
-#    observeState()
 
     
 def generateState():
@@ -382,10 +411,13 @@ def chat(sentence, disable = False):
 #    print lastUsrInput
     try:
         if not disable:
-#            say(str(chatbot.reply("localuser", str(sentence))))
-            p = {'question': sentence, 'sessionid': '123'}
-            r = requests.get('http://127.0.0.1:5000/api/v1.0/ask', params=p)
-            say(r.json().get('response').get('answer'))
+            try:
+    #            say(str(chatbot.reply("localuser", str(sentence))))
+                p = {'question': sentence, 'sessionid': '123'}
+                r = requests.get('http://127.0.0.1:5000/api/v1.0/ask', params=p)
+                say(r.json().get('response').get('answer'))
+            except Exception:
+                pass
         else:
             say("I am sorry, I am afraid I do not understand.")
     except RuntimeError:
@@ -397,7 +429,15 @@ def greet():
 
 
 def goodbye():
+    global memory
+    memory.unsubscribeToEvent("WordRecognized", "WordEvent")
     say("Have a nice day")
+    
+    if logging:
+        global logfile
+        logfile.write("Time: " + str(time.time() - startTime) + "\n")
+        logfile.close()
+
     clean_up()
 
 
@@ -440,18 +480,27 @@ def taskConsume():
             client = SimpleActionClient("/give_voucher", GiveVoucherAction)
             client.wait_for_server()
             client.send_goal_and_wait(GiveVoucherGoal(shop_id=shopList.getId(ALMemory.getData("shopName"))))
+            
+            if logging:
+                global logfile
+                logfile.write("S: <voucher to " + ALMemory.getData("shopName") + ">\n")
         else:
             say("I am sorry, this shop does not have give any vouchers this period")
     elif ALMemory.getData("ctxTask") == "selfie":
         client = SimpleActionClient("/take_picture", EmptyAction)
         client.wait_for_server()
         client.send_goal_and_wait(EmptyGoal())
+        
+        if logging:
+            global logfile
+            logfile.write("S: <selfie app>\n")
     else:
         say("Let me see. There are " + str(len(shopList.filteredCategory(ALMemory.getData("ctxTask")))) +
-            " " + ALMemory.getData("ctxTask") + " shops nearby")
+            " " + ALMemory.getData("ctxTask") + " shops nearby. " +
+            "These are " + shopList.filteredCategory(ALMemory.getData("ctxTask")).enumShops() + ".")
 
         # print shopList.filteredCategory(ALMemory.getData("ctxTask")).enumShops()
-        say("These are " + shopList.filteredCategory(ALMemory.getData("ctxTask")).enumShops() + ".")
+#        say("These are " + shopList.filteredCategory(ALMemory.getData("ctxTask")).enumShops() + ".")
 
     ALMemory.insertData("ctxTask", "")
     ALMemory.insertData("tskFilled", "False")
@@ -473,6 +522,7 @@ def wait():
     ALMemory.insertData("tskCompleted", "False")
     ALMemory.insertData("timeout", "False")
     memory.subscribeToEvent("Dialog/LastInput", "SpeechEvent", "onSpeechDetected")
+    memory.subscribeToEvent("WordRecognized", "WordEvent", "onWordRecognized")
     ALDialog.subscribe('my_dialog_example')
     while True:
         time.sleep(1)
@@ -532,6 +582,10 @@ def entryPoint():
     global ALDialog
     global foundperson
     foundperson = False
+    
+    if logging:
+        global logfile
+        logfile = open("/home/ip9/ros_ws/src/mummer_dialogue/mummer_dialogue/etc/dialogue" +str(time.time())+".log", "w")
 
     ALSpeechRecognition = session.service("ALSpeechRecognition")
     ALMemory = session.service("ALMemory")
@@ -546,19 +600,19 @@ def entryPoint():
                      'concept:(clothing) [shoes jacket "t-shirt" belt jeans trousers shirt underwear clothing]\n'
                      'concept:(selfie) [selfie picture photo photograph]\n'
                      'concept:(voucher) [voucher sale sales bargain bargains "special offers"]\n'
-                     'u: (_* ~voucher * _~shop) $tskFilled=True $ctxTask=voucherANDshop $shopName=$1 $usrEngChat=False $slotMissing=False\n'
-                     'u: (_* ~voucher) $tskFilled=True $ctxTask=voucher $usrEngChat=False $slotMissing=True\n'
+                     'u: (_*~voucher{*}_~shop) $tskFilled=True $ctxTask=voucherANDshop $shopName=$2 $usrEngChat=False $slotMissing=False\n'
+                     'u: (_*~voucher) $tskFilled=True $ctxTask=voucher $usrEngChat=False $slotMissing=True\n'
                      #'  u1: (* _~shop) $tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $slotMissing=False $shopName=$1 $slotMissing==True\n'
-                     'u: (_*~selfie *) $tskFilled=True $ctxTask=selfie $usrEngChat=False\n'
+                     'u: (_*~selfie) $tskFilled=True $ctxTask=selfie $usrEngChat=False\n'
                      #'u: ([e:FrontTactilTouched e:MiddleTactilTouched e:RearTactilTouched]) $ctxTask=voucherANDshop $slotMissing=False  testing $slotMissing==True\n'
                      'u: (_*~coffee) $tskFilled=True $ctxTask=coffee $usrEngChat=False\n'
                      'u: (_*~electronics) $tskFilled=True $ctxTask=electronics $usrEngChat=False\n'
                      'u: (_*~clothing) $tskFilled=True $ctxTask=clothing $usrEngChat=False\n'
                      'u: (_*~bye) $bye=True $usrEngChat=False \n'
                      #'u: (e:Dialog/NotUnderstood) $usrEngChat=True \n'
-                     'u: (_*) $Dialog/LastInput=$1 $FullSentence=$1\n'
-                     'u: (e:Dialog/NotSpeaking5) $timeout=True $usrEngChat=False \n'
-                     'u: (_*_~shop) ["$tskFilled=True $ctxTask=directions $shopName=$2 $usrEngChat=False $slotMissing==False" "$tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $slotMissing=False $shopName=$1"]\n'
+                     'u: (_*) $Dialog/LastInput=$1 \n'
+                     'u: (e:Dialog/NotSpeaking10) $timeout=True $usrEngChat=False \n'
+                     'u: (_{*}_~shop) ["$tskFilled=True $ctxTask=directions $shopName=$2 $usrEngChat=False $slotMissing==False" "$tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $slotMissing=False $shopName=$2"]\n'
                      ) 
                     
 
@@ -572,7 +626,7 @@ def entryPoint():
     #    ALMotion.setBreathEnabled('Arms', True)
     instantiateMemory()
 
-    initChatbot(path + '/etc/chatbot/eg/brain')
+#    initChatbot(path + '/etc/chatbot/eg/brain')
 
     # Subscribe to the speech and face detection events:
     global memory
@@ -582,8 +636,11 @@ def entryPoint():
 
     global rosSubscriber
     rosSubscriber = rospy.Subscriber('/naoqi_driver_node/people_detected', PersonDetectedArray, FaceDetected, queue_size=1)
-
-
+    
+    global startTime
+    startTime = time.time()
+      
+    
 rospy.init_node('DialogueStart', anonymous=True)
 actionServer = SimpleActionServer('dialogue_start', dialogueAction, auto_start=False)
 actionServer.register_goal_callback(entryPoint)
@@ -640,6 +697,9 @@ shopList = ShopList(db[collection_name].find({"semantic_map_name": semantic_map_
 
 global SpeechEvent
 SpeechEvent = SpeechEventModule("SpeechEvent")
+
+global WordEvent
+WordEvent = WordModule("WordEvent")
 
 __update_srv_name = rospy.get_param("~update_srv_name", "/kcl_rosplan/update_knowledge_base_array")
 
