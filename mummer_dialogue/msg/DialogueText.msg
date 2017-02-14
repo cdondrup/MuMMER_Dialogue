@@ -1,3 +1,5 @@
 Header header
 string actor
-string text
+string used_utterance
+string[] utterances
+float64[] confidences
