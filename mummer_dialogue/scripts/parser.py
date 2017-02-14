@@ -28,6 +28,7 @@ from dialogue_task_actions.msg import GiveVoucherAction, GiveVoucherGoal
 from dialogue_task_actions.msg import EmptyAction, EmptyGoal
 from pymongo import MongoClient
 import flask, requests
+from mummer_dialogue.msg import DialogueText
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -41,6 +42,7 @@ actionName = None
 shopList = None
 ALDialog = None
 ALMemory = None
+topic_name = None
 # ALTracker = None
 ALSpeechRecognition = None
 pplperc = None
@@ -51,11 +53,6 @@ rosMessagetimeStamp = None
 stateThread = None
 
 logfile = None
-
-#### SET TO TRUE TO ENABLE LOGGING ####
-logging = False
-
-
 startTime = None
 
 # State attributes
@@ -116,6 +113,31 @@ class WordModule(ALModule):
         asrconf = identifier
 
 
+def publish_dialogue_text(actor, text, utterances):
+    d = DialogueText()
+    d.header.stamp = rospy.Time.now()
+    d.actor = actor
+    d.used_utterance = text
+    d.utterances = utterances[0::2]
+    d.confidences = utterances[1::2]
+    dialoguePublisher.publish(d)
+    
+def log(actor, text, utterances):
+    try:
+        publish_dialogue_text(str(actor), str(text), utterances)
+        if logging:
+            logfile.write(str(rospy.Time.now().to_sec())+","+actor+"," + text + 
+            "," + str(utterances) + "\n")
+    except ValueError as e:
+        rospy.logwarn(e)
+        
+def log_human(text, utterances):
+    log("Human", text, utterances)
+    
+def log_robot(text):
+    log("Robot", text, [text,1.0])
+    
+
 class SpeechEventModule(ALModule):
     """ A simple module able to react to facedetection events """
 
@@ -126,18 +148,12 @@ class SpeechEventModule(ALModule):
         global memory
         memory.unsubscribeToEvent("Dialog/LastInput", "SpeechEvent")
         ALDialog.unsubscribe('my_dialog_example')
-        
+        log_human(ALMemory.getData("Dialog/LastInput"), asrconf)
         # flipTurn()
 
         global userStoppedTalking
         userStoppedTalking = True
-        if logging:
-            try:
-                global logfile
-                logfile.write("U: " + ALMemory.getData("Dialog/LastInput") + 
-                " " + str(asrconf) + "\n")
-            except ValueError:
-                pass
+        
 
 ################ ROS ################
 def FaceDetected(data):
@@ -187,45 +203,41 @@ def __call_service(srv_name, srv_type, req):
 
 
 def say(text):
-    if logging:
-        try:
-            global logfile
-            logfile.write("S: " + text + "\n")
-        except ValueError:
-            pass
-        
+    log_robot(text)        
     __call_service("/naoqi_driver/animated_speech/say", Say, SayRequest(text=text))
 
 
 def clean_up():
+    global memory
+    memory.unsubscribeToEvent("WordRecognized", "WordEvent")
+    if logging:
+        logfile.close()
+
     if actionServer.is_active():
         rospy.loginfo("End of interaction ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         client = SimpleActionClient("/goal_server/disengage", GoalServerAction)
         client.wait_for_server()
         client.send_goal(GoalServerGoal())
 
-        #    ALTracker.unregisterAllTargets()
-        #    ALTracker.stopTracker()
-
-        #        req = KnowledgeUpdateServiceArrayRequest()
-        #        req.update_type = req.ADD_KNOWLEDGE
-        #        k = KnowledgeItem()
-        #        k.knowledge_type = KnowledgeItem.FACT
-        #        k.attribute_name = "engaged"
-        #        k.values = [
-        #            KeyValue(key="i", value="iid_0"),
-        #            KeyValue(key="t", value="hello")
-        #        ]
-        #        req.knowledge.append(k)
         rosSubscriber.unregister()
-        #    __call_service(
-        #        __update_srv_name,
-        #        KnowledgeUpdateServiceArray,
-        #        req
-        #    )
         actionServer.set_succeeded()
     else:
         rospy.logerr("Tried to disengage while server was inactive")
+        
+def shut_down():
+    if ALDialog != None:
+        # stopping the dialog engine
+        try:
+            ALDialog.unsubscribe('my_dialog_example')
+        except RuntimeError:
+            pass
+    
+        # Deactivating all topics
+        ALDialog.deactivateTopic(topic_name)
+    
+        # now that the dialog engine is stopped and there are no more activated topics,
+        # we can unload all topics and free the associated memory
+        ALDialog.unloadTopic(topic_name)
 
 #####################################
 
@@ -429,15 +441,7 @@ def greet():
 
 
 def goodbye():
-    global memory
-    memory.unsubscribeToEvent("WordRecognized", "WordEvent")
     say("Have a nice day")
-    
-    if logging:
-        global logfile
-        logfile.write("Time: " + str(time.time() - startTime) + "\n")
-        logfile.close()
-
     clean_up()
 
 
@@ -480,20 +484,14 @@ def taskConsume():
             client = SimpleActionClient("/give_voucher", GiveVoucherAction)
             client.wait_for_server()
             client.send_goal_and_wait(GiveVoucherGoal(shop_id=shopList.getId(ALMemory.getData("shopName"))))
-            
-            if logging:
-                global logfile
-                logfile.write("S: <voucher to " + ALMemory.getData("shopName") + ">\n")
+            log_robot("<voucher to " + ALMemory.getData("shopName") + ">")
         else:
             say("I am sorry, this shop does not have give any vouchers this period")
     elif ALMemory.getData("ctxTask") == "selfie":
         client = SimpleActionClient("/take_picture", EmptyAction)
         client.wait_for_server()
         client.send_goal_and_wait(EmptyGoal())
-        
-        if logging:
-            global logfile
-            logfile.write("S: <selfie app>\n")
+        log_robot("<selfie app>")
     else:
         say("Let me see. There are " + str(len(shopList.filteredCategory(ALMemory.getData("ctxTask")))) +
             " " + ALMemory.getData("ctxTask") + " shops nearby. " +
@@ -585,7 +583,7 @@ def entryPoint():
     
     if logging:
         global logfile
-        logfile = open("/home/ip9/ros_ws/src/mummer_dialogue/mummer_dialogue/etc/dialogue" +str(time.time())+".log", "w")
+        logfile = open(logpath + "/" + str(time.time()) + ".log", "w")
 
     ALSpeechRecognition = session.service("ALSpeechRecognition")
     ALMemory = session.service("ALMemory")
@@ -617,6 +615,7 @@ def entryPoint():
                     
 
     # Loading the topics directly as text strings
+    global topic_name
     topic_name = ALDialog.loadTopicContent(topic_content)
 
     # Activating the loaded topics
@@ -648,8 +647,11 @@ actionServer.register_goal_callback(entryPoint)
 r = rospkg.RosPack()
 path = r.get_path('mummer_dialogue')
 
+logging = rospy.get_param("~logging", False)
+logpath = rospy.get_param("~log_path", "/tmp")
+
 parser = argparse.ArgumentParser()
-parser.add_argument("--ip", type=str, default="137.195.108.20",
+parser.add_argument("--ip", type=str, default="pepper",
                     help="Robot's IP address. If on a robot or a local Naoqi")
 parser.add_argument("--port", type=int, default=9559,
                     help="port number, the default value is OK in most cases")
@@ -703,6 +705,9 @@ WordEvent = WordModule("WordEvent")
 
 __update_srv_name = rospy.get_param("~update_srv_name", "/kcl_rosplan/update_knowledge_base_array")
 
+dialoguePublisher = rospy.Publisher('~dialogue_text', DialogueText, queue_size=10)
+
+rospy.on_shutdown(shut_down)
 actionServer.start()
 rospy.spin()
 
