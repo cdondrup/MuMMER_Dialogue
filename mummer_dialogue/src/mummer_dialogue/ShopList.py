@@ -14,8 +14,8 @@ class ShopList(list):
             for entry in db:
                 shop = Shop(
                     int(entry['shop_id']), 
-                    entry['shopName'], 
-                    entry['category'],
+                    entry['shopName'].lower(), 
+                    entry['category'].lower(),
                     entry['directions'], 
                     self.str2bool(entry['sales'])
                 )
@@ -35,9 +35,10 @@ class ShopList(list):
     #                self.remove(s)
     #        return self
 
+    #lowercase the shopname first
     def getShop(self, shopName):
         for s in self:
-            if s.getName() == shopName:
+            if s.getName() == shopName.lower():
                 return s
 
     def enumShops(self):

@@ -4254,12 +4254,12 @@
             <srai>LANGUAGE</srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>BYEE</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>CAN YOU MAKE ME A SANDWICH</pattern>
         <template>
@@ -6871,13 +6871,13 @@
             <srai>THANK YOU</srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>GOODBYE *</pattern>
         <template>
             <srai>GOODBYE</srai>
             <sr/>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>I GOT *</pattern>
         <template>
@@ -7959,12 +7959,12 @@
             </srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>BYE BYE *</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>PLZ *</pattern>
         <template>
@@ -8319,12 +8319,12 @@
             <srai>OPEN MONSTER PARK</srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>SEE YOU</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>MONSTER PARK</pattern>
         <template>

@@ -34,6 +34,7 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 goal = None
 some_state = None
+fallback_state = None
 memory = None
 chatbot = None
 nextAction = None
@@ -147,6 +148,7 @@ class SpeechEventModule(ALModule):
     def onSpeechDetected(self, *_args):
         global memory
         memory.unsubscribeToEvent("Dialog/LastInput", "SpeechEvent")
+        memory.unsubscribeToEvent("WordRecognized", "WordEvent")
         ALDialog.unsubscribe('my_dialog_example')
         log_human(ALMemory.getData("Dialog/LastInput"), asrconf)
         # flipTurn()
@@ -337,16 +339,31 @@ def observeState():
     global nextAction
     global loop_exit
     loop_exit = False
+    restore = False
     
     while not loop_exit:
         print "user utterance: ", ALMemory.getData("Dialog/LastInput")
         print asrconf
-        some_state = generateState()
-        some_state.printState()
-
+        if not restore:
+            some_state = generateState()
+            some_state.printState()
+        else:
+            some_state = fallback_state
+            some_state.printState()
+            restore = False
+            
         nextAction = action(some_state)
         print "Action selected: ", nextAction
+        
+        # If the action was not to requestShop, reset the slotMissing variable
+        if actionID[nextAction] != 6:
+            if actionID[nextAction] != 9:
+                print "aeraaaaaaaaaaaaaaaaa"
+                ALMemory.insertData("slotMissing", "False")
+                
         print "slotMissing: ", ALMemory.getData("slotMissing")
+        
+
     
     #    decodeAction(nextAction)
     #    print "observe state: end"    
@@ -383,22 +400,36 @@ def observeState():
             # Write action taken to state
             if actionID[nextAction] != 6:
                 ALMemory.insertData("prevAct", actionID[nextAction])
+                
+                
         except KeyError as e:
             print "Error", e
-            print "Fallback to default action"
+#            print "Fallback to default action"
     
             if rosMessagetimeStamp + 1. < rospy.Time.now().to_sec():
+                print "fucktard left"
                 goodbye()
                 return
     
             chat('fallback utterance')
             if not turn:
                 print "falling back to backup user state:"
-                pushFallbackStateToMemory()
+                restore = True
+#                pushFallbackStateToMemory()
                 print '\n'
                 continue
+            
+
+        
     
-        print '\n'
+        # Save current ROBOT state as fallback state in case next turn produces an error.
+        # 
+        if turn:
+            global fallback_state
+            fallback_state = some_state
+            print "SAVED STATE"
+        
+        print
         flipTurn()
 
     
@@ -469,7 +500,6 @@ def requestShop():
     say("There are " + str(len(shopList.filteredSales())) + " shops that have sales nearby.")
     say("These are " + shopList.filteredSales().enumShops())
     # say("Which shop would you like to get a voucher for?")
-    print "Shop Name: ", ALMemory.getData("shopName")
     ALMemory.insertData("ctxTask", "")
     ALMemory.insertData("tskFilled", "False")
     ALMemory.insertData("tskCompleted", "True")
@@ -485,6 +515,7 @@ def taskConsume():
             client.wait_for_server()
             client.send_goal_and_wait(GiveVoucherGoal(shop_id=shopList.getId(ALMemory.getData("shopName"))))
             log_robot("<voucher to " + ALMemory.getData("shopName") + ">")
+            ALMemory.insertData("slotMissing", "False")
         else:
             say("I am sorry, this shop does not have give any vouchers this period")
     elif ALMemory.getData("ctxTask") == "selfie":
@@ -503,7 +534,7 @@ def taskConsume():
     ALMemory.insertData("ctxTask", "")
     ALMemory.insertData("tskFilled", "False")
     ALMemory.insertData("tskCompleted", "True")
-
+    print "Shop Name: ", ALMemory.getData("shopName")
 
 def requestTask():
     say("Is there anything I can help you with?")
@@ -597,20 +628,20 @@ def entryPoint():
                      'concept:(electronics) [iPhone Samsung case adapter television TV charger mobile phone]\n'
                      'concept:(clothing) [shoes jacket "t-shirt" belt jeans trousers shirt underwear clothing]\n'
                      'concept:(selfie) [selfie picture photo photograph]\n'
-                     'concept:(voucher) [voucher sale sales bargain bargains "special offers"]\n'
-                     'u: (_*~voucher{*}_~shop) $tskFilled=True $ctxTask=voucherANDshop $shopName=$2 $usrEngChat=False $slotMissing=False\n'
-                     'u: (_*~voucher) $tskFilled=True $ctxTask=voucher $usrEngChat=False $slotMissing=True\n'
+                     'concept:(voucher) [voucher sale sales bargain bargains "special offers" vulture]\n'
+                     'u: (_{*}~voucher{*}_~shop{*}) $tskFilled=True $ctxTask=voucherANDshop $shopName=$2 $usrEngChat=False $slotMissing=False\n'
+                     'u: (_{*}~voucher{*}) $tskFilled=True $ctxTask=voucher $usrEngChat=False $slotMissing=True\n'
                      #'  u1: (* _~shop) $tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $slotMissing=False $shopName=$1 $slotMissing==True\n'
-                     'u: (_*~selfie) $tskFilled=True $ctxTask=selfie $usrEngChat=False\n'
+                     'u: (_*~selfie{*}) $tskFilled=True $ctxTask=selfie $usrEngChat=False\n'
                      #'u: ([e:FrontTactilTouched e:MiddleTactilTouched e:RearTactilTouched]) $ctxTask=voucherANDshop $slotMissing=False  testing $slotMissing==True\n'
-                     'u: (_*~coffee) $tskFilled=True $ctxTask=coffee $usrEngChat=False\n'
-                     'u: (_*~electronics) $tskFilled=True $ctxTask=electronics $usrEngChat=False\n'
-                     'u: (_*~clothing) $tskFilled=True $ctxTask=clothing $usrEngChat=False\n'
-                     'u: (_*~bye) $bye=True $usrEngChat=False \n'
+                     'u: (_*~coffee{*}) $tskFilled=True $ctxTask=coffee $usrEngChat=False\n'
+                     'u: (_*~electronics{*}) $tskFilled=True $ctxTask=electronics $usrEngChat=False\n'
+                     'u: (_*~clothing{*}) $tskFilled=True $ctxTask=clothing $usrEngChat=False\n'
+                     'u: (_{*}~bye{*}) $bye=True $usrEngChat=False \n'
                      #'u: (e:Dialog/NotUnderstood) $usrEngChat=True \n'
                      'u: (_*) $Dialog/LastInput=$1 \n'
                      'u: (e:Dialog/NotSpeaking10) $timeout=True $usrEngChat=False \n'
-                     'u: (_{*}_~shop) ["$tskFilled=True $ctxTask=directions $shopName=$2 $usrEngChat=False $slotMissing==False" "$tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $slotMissing=False $shopName=$2"]\n'
+                     'u: (_{*}_~shop{*}) ["$slotMissing==False $tskFilled=True $ctxTask=directions $shopName=$2 $usrEngChat=False" "$tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $shopName=$2"]\n'
                      ) 
                     
 
