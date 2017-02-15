@@ -2240,7 +2240,7 @@
         <pattern>PAPER</pattern>
         <template>\</template>
     </category>
-    <category>
+    <!-- <category>
         <pattern>BYE</pattern>
         <template>
             <random>
@@ -2253,7 +2253,7 @@
                 <li>Have a great journey until next time.</li>
             </random>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>ME</pattern>
         <template>

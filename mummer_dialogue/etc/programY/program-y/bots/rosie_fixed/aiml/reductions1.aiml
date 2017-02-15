@@ -1197,12 +1197,12 @@
             </srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>SEE YA *</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>SET THE ALARM *</pattern>
         <template>
@@ -1452,12 +1452,12 @@
             <srai>WHAT</srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>CYA</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>DICKS</pattern>
         <template>
@@ -1722,12 +1722,12 @@
             </srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>I NEED TO GO</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>I SAID SHE *</pattern>
         <template>
@@ -3934,12 +3934,12 @@
             <srai>LOL</srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>SEE YOU SOON</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>SEEN *</pattern>
         <template>
@@ -5101,12 +5101,12 @@
             <srai>IT IS HOT</srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>K BYE</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>LMFAO *</pattern>
         <template>
@@ -7227,12 +7227,12 @@
             <srai>LAUNCH MUSIC</srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>SEE YA</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>THANKYOU</pattern>
         <template>
@@ -9004,12 +9004,12 @@
             </srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>TALK TO YOU LATER</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>WHAT IS YOUR FAVORITE BOOK</pattern>
         <template>
@@ -9256,12 +9256,12 @@
             <srai>WHAT IS SIRI</srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>GOOD BYE</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>HOW DO I GET TO *</pattern>
         <template>
@@ -9367,12 +9367,12 @@
             <srai>LAUNCH CALENDAR</srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>SEE YOU LATER</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>WHAT IS YOUR IQ</pattern>
         <template>
@@ -11072,12 +11072,12 @@
             </srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>BYE BYE</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>DO YOU KNOW ANY *</pattern>
         <template>
@@ -11123,12 +11123,12 @@
             <srai>YES</srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>BYE *</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>WAT</pattern>
         <template>
@@ -11793,12 +11793,12 @@
             </srai>
         </template>
     </category>
-    <category>
+<!--     <category>
         <pattern>GOODBYE</pattern>
         <template>
             <srai>BYE</srai>
         </template>
-    </category>
+    </category> -->
     <category>
         <pattern>HOW ARE YOU TODAY</pattern>
         <template>
