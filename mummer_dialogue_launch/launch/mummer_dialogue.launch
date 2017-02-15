@@ -8,10 +8,12 @@
   <include file="$(find dialogue_task_actions)/launch/dialogue_task_actions.launch">
     <arg name="semantic_map_name" value="$(arg semantic_map_name)" />    
   </include>
-  <node name="mummer_dialogue" pkg="mummer_dialogue" type="parser.py" args="--ip $(arg nao_ip) --port $(arg nao_port)" output="screen" respawn="true">
-    <param name="semantic_map_name" type="string" value="$(arg semantic_map_name)"/>
-    <param name="logging" type="bool" value="$(arg logging)"/>
-    <param name="log_path" type="string" value="$(arg log_path)"/>
-  </node>
+  <include file="$(find mummer_dialogue)/launch/mummer_dialogue.launch">
+    <arg name="nao_ip" value="$(arg nao_ip)"/>
+    <arg name="nao_port" value="$(arg nao_port)"/>
+    <arg name="semantic_map_name" value="$(arg semantic_map_name)"/>
+    <arg name="logging" value="$(arg logging)"/>
+    <arg name="log_path" value="$(arg log_path)"/>
+  </include>
   
 </launch>
