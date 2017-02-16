@@ -128,7 +128,7 @@ def log(actor, text, utterances):
         publish_dialogue_text(str(actor), str(text), utterances)
         if logging:
             logfile.write(str(rospy.Time.now().to_sec())+","+actor+"," + text + 
-            "," + str(utterances) + "\n")
+            "," + str(utterances) + "," + actionName + "\n")
     except ValueError as e:
         rospy.logwarn(e)
         
@@ -497,8 +497,9 @@ def giveDirections():
 
 
 def requestShop():
-    say("There are " + str(len(shopList.filteredSales())) + " shops that have sales nearby.")
-    say("These are " + shopList.filteredSales().enumShops())
+    say("There are " + str(len(shopList.filteredSales())) + " shops that have sales nearby. These are " 
+    + shopList.filteredSales().enumShops())
+#    say("These are " + shopList.filteredSales().enumShops())
     # say("Which shop would you like to get a voucher for?")
     ALMemory.insertData("ctxTask", "")
     ALMemory.insertData("tskFilled", "False")
