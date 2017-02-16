@@ -7,6 +7,7 @@ project(mummer_dialogue)
 find_package(catkin REQUIRED COMPONENTS
   actionlib
   actionlib_msgs
+  dynamic_reconfigure
   message_generation
   message_runtime
   rospy
@@ -50,6 +51,10 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   DialogueText.msg
+)
+
+generate_dynamic_reconfigure_options(
+  cfg/MummerDialogue.cfg
 )
 
 ## Generate services in the 'srv' folder

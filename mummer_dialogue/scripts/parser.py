@@ -29,6 +29,9 @@ from dialogue_task_actions.msg import EmptyAction, EmptyGoal
 from pymongo import MongoClient
 import flask, requests
 from mummer_dialogue.msg import DialogueText
+from dynamic_reconfigure.server import Server as DynServer
+from mummer_dialogue.cfg import MummerDialogueConfig
+
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
@@ -55,6 +58,8 @@ stateThread = None
 
 logfile = None
 startTime = None
+
+chat_enabled = True
 
 # State attributes
 tskC = False
@@ -128,7 +133,7 @@ def log(actor, text, utterances):
         publish_dialogue_text(str(actor), str(text), utterances)
         if logging:
             logfile.write(str(rospy.Time.now().to_sec())+","+actor+"," + text + 
-            "," + str(utterances) + "," + actionName + "\n")
+            "," + str(utterances) + "," + str(nextAction) + '\n')
     except ValueError as e:
         rospy.logwarn(e)
         
@@ -187,6 +192,12 @@ def FaceDetected(data):
             break
         else:
             rospy.logwarn("Unknown person '%s'" % str(p.id))
+            
+
+def dyn_callback(config, level):
+    global chat_enabled
+    chat_enabled = config["enable_chat"]
+    return config
 
 
 def __call_service(srv_name, srv_type, req):
@@ -210,8 +221,11 @@ def say(text):
 
 
 def clean_up():
-    global memory
-    memory.unsubscribeToEvent("WordRecognized", "WordEvent")
+    try:    
+        memory.unsubscribeToEvent("WordRecognized", "WordEvent")
+    except RuntimeError:
+        pass
+    
     if logging:
         logfile.close()
 
@@ -358,7 +372,6 @@ def observeState():
         # If the action was not to requestShop, reset the slotMissing variable
         if actionID[nextAction] != 6:
             if actionID[nextAction] != 9:
-                print "aeraaaaaaaaaaaaaaaaa"
                 ALMemory.insertData("slotMissing", "False")
                 
         print "slotMissing: ", ALMemory.getData("slotMissing")
@@ -374,7 +387,7 @@ def observeState():
             if nextAction == "Greet":
                 greet()
             elif nextAction == "Chat":
-                chat(lastUsrInput, False) # Remove "True" or set to False to enable chatbot
+                chat(lastUsrInput, not chat_enabled) # Remove "True" or set to False to enable chatbot
             elif nextAction == "wait":
                 wait()
             elif nextAction == "taskConsume":
@@ -630,8 +643,8 @@ def entryPoint():
                      'concept:(clothing) [shoes jacket "t-shirt" belt jeans trousers shirt underwear clothing]\n'
                      'concept:(selfie) [selfie picture photo photograph]\n'
                      'concept:(voucher) [voucher sale sales bargain bargains "special offers" vulture]\n'
-                     'u: (_{*}~voucher{*}_~shop{*}) $tskFilled=True $ctxTask=voucherANDshop $shopName=$2 $usrEngChat=False $slotMissing=False\n'
-                     'u: (_{*}~voucher{*}) $tskFilled=True $ctxTask=voucher $usrEngChat=False $slotMissing=True\n'
+                     'u: (_*~voucher{*}_~shop{*}) $tskFilled=True $ctxTask=voucherANDshop $shopName=$2 $usrEngChat=False $slotMissing=False\n'
+                     'u: (_*~voucher{*}) $tskFilled=True $ctxTask=voucher $usrEngChat=False $slotMissing=True\n'
                      #'  u1: (* _~shop) $tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $slotMissing=False $shopName=$1 $slotMissing==True\n'
                      'u: (_*~selfie{*}) $tskFilled=True $ctxTask=selfie $usrEngChat=False\n'
                      #'u: ([e:FrontTactilTouched e:MiddleTactilTouched e:RearTactilTouched]) $ctxTask=voucherANDshop $slotMissing=False  testing $slotMissing==True\n'
@@ -642,7 +655,7 @@ def entryPoint():
                      #'u: (e:Dialog/NotUnderstood) $usrEngChat=True \n'
                      'u: (_*) $Dialog/LastInput=$1 \n'
                      'u: (e:Dialog/NotSpeaking10) $timeout=True $usrEngChat=False \n'
-                     'u: (_{*}_~shop{*}) ["$slotMissing==False $tskFilled=True $ctxTask=directions $shopName=$2 $usrEngChat=False" "$tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $shopName=$2"]\n'
+                     'u: (_*_~shop{*}) ["$slotMissing==False $tskFilled=True $ctxTask=directions $shopName=$2 $usrEngChat=False" "$slotMissing==True $tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $shopName=$2"]\n'
                      ) 
                     
 
@@ -675,6 +688,7 @@ def entryPoint():
 rospy.init_node('DialogueStart', anonymous=True)
 actionServer = SimpleActionServer('dialogue_start', dialogueAction, auto_start=False)
 actionServer.register_goal_callback(entryPoint)
+DynServer(MummerDialogueConfig, dyn_callback)
 
 r = rospkg.RosPack()
 path = r.get_path('mummer_dialogue')
