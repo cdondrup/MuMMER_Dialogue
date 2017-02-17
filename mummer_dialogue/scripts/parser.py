@@ -138,8 +138,8 @@ def log(actor, text, utterances):
     try:
         publish_dialogue_text(str(actor), str(text), utterances)
         if logging:
-            logfile.write(str(rospy.Time.now().to_sec())+","+actor+"," + text + 
-            "," + str(utterances) + "," + str(nextAction) + '\n')
+            logfile.write(str(rospy.Time.now().to_sec())+"\t"+actor+"\t" + text + 
+            "\t" + str(utterances) + "\t" + str(nextAction) + '\n')
     except ValueError as e:
         rospy.logwarn(e)
         
@@ -453,7 +453,6 @@ def observeState():
         if turn:
             global fallback_state
             fallback_state = some_state
-            print "SAVED STATE"
         
         print
         flipTurn()
@@ -488,7 +487,7 @@ def chat(sentence, disable = False):
             except Exception:
                 pass
         else:
-            say("I am sorry, I am afraid I do not understand.")
+            say("I am afraid I do not understand.")
     except RuntimeError:
         print "error in chatbot"
 
@@ -649,7 +648,7 @@ def entryPoint():
 
     topic_content = ('topic: ~example_topic_content()\n'
                      'language: enu\n'
-                     'concept:(bye) [bye Goodbye farewell "see you later" "see you" ]\n'
+                     'concept:(bye) ["bye bye" Goodbye farewell "see you later" "see you" ]\n'
                      'concept:(coffee) [coffee cappuccino latte espresso americano]\n'
                      'concept:(shop) [starbucks costa public "hardware electronics" tesco primark "phone heaven"]\n'
                      'concept:(electronics) [iPhone Samsung case adapter television TV charger mobile phone]\n'
