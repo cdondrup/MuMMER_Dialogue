@@ -117,7 +117,13 @@ class WordModule(ALModule):
     def onWordRecognized(self, value, identifier):
         global asrconf
         asrconf = identifier
-
+        
+        global memory
+        try:
+#            memory.unsubscribeToEvent("Dialog/LastInput", "SpeechEvent")
+            memory.unsubscribeToEvent("WordRecognized", "WordEvent")
+        except Exception:
+            pass
 
 def publish_dialogue_text(actor, text, utterances):
     d = DialogueText()
@@ -153,7 +159,7 @@ class SpeechEventModule(ALModule):
     def onSpeechDetected(self, *_args):
         global memory
         memory.unsubscribeToEvent("Dialog/LastInput", "SpeechEvent")
-        memory.unsubscribeToEvent("WordRecognized", "WordEvent")
+#        memory.unsubscribeToEvent("WordRecognized", "WordEvent")
         ALDialog.unsubscribe('my_dialog_example')
         log_human(ALMemory.getData("Dialog/LastInput"), asrconf)
         # flipTurn()
@@ -183,7 +189,7 @@ def FaceDetected(data):
                 #        ALTracker.track("People")
                 global memory
                 global ALDialog
-                ALDialog.subscribe('my_dialog_example')
+#                ALDialog.subscribe('my_dialog_example')
 
                 # observeState()
                 global stateThread
@@ -225,6 +231,8 @@ def clean_up():
         memory.unsubscribeToEvent("WordRecognized", "WordEvent")
     except RuntimeError:
         pass
+    
+    instantiateMemory()
     
     if logging:
         logfile.close()
@@ -334,7 +342,12 @@ def instantiateMemory():
     ALMemory.insertData("slotMissing", "False")
 
     ALMemory.insertData("Dialog/LastInput", "")
-
+    
+    global nextAction
+    global asrconf
+    nextAction = None
+    asrconf = []
+    
     readMemoryState(ALMemory)
 
 
@@ -628,7 +641,7 @@ def entryPoint():
     
     if logging:
         global logfile
-        logfile = open(logpath + "/" + str(time.time()) + ".log", "w")
+        logfile = open(logpath + "/" + str(time.time())+ ("_w_chatbot" if chat_enabled else "_wo_chatbot") + ".log", "w")
 
     ALSpeechRecognition = session.service("ALSpeechRecognition")
     ALMemory = session.service("ALMemory")
