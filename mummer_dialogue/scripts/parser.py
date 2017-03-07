@@ -382,21 +382,14 @@ def observeState():
         nextAction = action(some_state)
         print "Action selected: ", nextAction
         
-        # If the action was not to requestShop, reset the slotMissing variable
-        if actionID[nextAction] != 6:
-            if actionID[nextAction] != 9:
-                ALMemory.insertData("slotMissing", "False")
-                
-        print "slotMissing: ", ALMemory.getData("slotMissing")
-        
-
-    
-    #    decodeAction(nextAction)
-    #    print "observe state: end"    
-    #    
-    #def decodeAction(nextAction):
-       
         try:
+        # If the action was not to requestShop, reset the slotMissing variable
+            if actionID[nextAction] != 6:
+                if actionID[nextAction] != 9:
+                    ALMemory.insertData("slotMissing", "False")
+                    
+            print "slotMissing: ", ALMemory.getData("slotMissing")
+        
             if nextAction == "Greet":
                 greet()
             elif nextAction == "Chat":
@@ -487,7 +480,7 @@ def chat(sentence, disable = False):
             except Exception:
                 pass
         else:
-            say("I am afraid I do not understand.")
+            say("I am afraid I cannot help you with that.")
     except RuntimeError:
         print "error in chatbot"
 
@@ -643,18 +636,19 @@ def entryPoint():
         logfile = open(logpath + "/" + str(time.time())+ ("_w_chatbot" if chat_enabled else "_wo_chatbot") + ".log", "w")
 
     ALSpeechRecognition = session.service("ALSpeechRecognition")
+#    ALSpeechRecognition.setParameter("NbHypotheses", 3)
     ALMemory = session.service("ALMemory")
     ALDialog = session.service("ALDialog")
 
     topic_content = ('topic: ~example_topic_content()\n'
                      'language: enu\n'
                      'concept:(bye) ["bye bye" Goodbye farewell "see you later" "see you" ]\n'
-                     'concept:(coffee) [coffee cappuccino latte espresso americano]\n'
-                     'concept:(shop) [starbucks costa public "hardware electronics" tesco primark "phone heaven"]\n'
+                     'concept:(coffee) [coffee cappuccino latte espresso americano coffeeshop "coffee shop" coffeeshops "coffee shops"]\n'
+                     'concept:(shop) [starbucks costa coasta coastal public "hardware electronics" tesco primark "pc world" pcworld disco school premark]\n'
                      'concept:(electronics) [iPhone Samsung case adapter television TV charger mobile phone]\n'
-                     'concept:(clothing) [shoes jacket "t-shirt" belt jeans trousers shirt underwear clothing]\n'
+                     'concept:(clothing) [clothes "clothing shop" "clothe shops" "clothing shops" shoes jacket "t-shirt" belt jeans trousers shirt underwear clothing dress skirt jumper]\n'
                      'concept:(selfie) [selfie picture photo photograph]\n'
-                     'concept:(voucher) [voucher sale sales bargain bargains "special offers" vulture]\n'
+                     'concept:(voucher) [discounts discount voucher sale sales bargain bargains "special offers" vulture]\n'
                      'u: (_*~voucher{*}_~shop{*}) $tskFilled=True $ctxTask=voucherANDshop $shopName=$2 $usrEngChat=False $slotMissing=False\n'
                      'u: (_*~voucher{*}) $tskFilled=True $ctxTask=voucher $usrEngChat=False $slotMissing=True\n'
                      #'  u1: (* _~shop) $tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $slotMissing=False $shopName=$1 $slotMissing==True\n'

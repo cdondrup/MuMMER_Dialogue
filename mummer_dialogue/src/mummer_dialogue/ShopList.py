@@ -37,6 +37,14 @@ class ShopList(list):
 
     #lowercase the shopname first
     def getShop(self, shopName):
+        if shopName.lower() == "pcworld":
+            shopName = "pc world"
+        elif shopName.lower() in ("disco","school"):
+            shopName = "tesco"
+        elif shopName.lower() in ("coasta","coastal"):
+            shopName = "costa"
+        elif shopName.lower() in ("premark",):
+            shopName = "primark"
         for s in self:
             if s.getName() == shopName.lower():
                 return s
