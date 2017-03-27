@@ -5,9 +5,11 @@
   <arg name="logging" default="false" />
   <arg name="log_path" default="/tmp" />
   <arg name="concepts_file" default="$(find mummer_dialogue)/etc/concepts.yaml" />
+  <arg name="quiz_app" default="quiz-9dde66/behavior_1" />
   
   <include file="$(find dialogue_task_actions)/launch/dialogue_task_actions.launch">
-    <arg name="semantic_map_name" value="$(arg semantic_map_name)" />    
+    <arg name="semantic_map_name" value="$(arg semantic_map_name)" />
+    <arg name="quiz_app" value="$(arg quiz_app)" />    
   </include>
   <include file="$(find mummer_dialogue)/launch/mummer_dialogue.launch">
     <arg name="nao_ip" value="$(arg nao_ip)"/>

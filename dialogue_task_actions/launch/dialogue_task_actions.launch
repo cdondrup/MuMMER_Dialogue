@@ -1,5 +1,6 @@
 <launch>
   <arg name="semantic_map_name"/>
+  <arg name="quiz_app" default="quiz-9dde66/behavior_1"/>
   
   <node pkg="dialogue_task_actions" type="route_description.py" name="route_description_goal_server" output="screen" respawn="true">
     <param name="semantic_map_name" value="$(arg semantic_map_name)" type="string"/>
@@ -8,5 +9,7 @@
     <param name="semantic_map_name" value="$(arg semantic_map_name)" type="string"/>
   </node>
   <node pkg="dialogue_task_actions" type="take_picture.py" name="take_picture" output="screen" respawn="true"/>
-  <node pkg="dialogue_task_actions" type="quiz.py" name="quiz_game" output="screen" respawn="true"/>
+  <node pkg="dialogue_task_actions" type="quiz.py" name="quiz_game" output="screen" respawn="true">
+    <param name="quiz_app" value="$(arg quiz_app)" type="string"/>
+  </node>
 </launch>
