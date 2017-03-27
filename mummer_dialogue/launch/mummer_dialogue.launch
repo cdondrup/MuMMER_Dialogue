@@ -4,12 +4,14 @@
   <arg name="nao_port" default="$(optenv NAO_PORT 9559)" />
   <arg name="logging" default="false" />
   <arg name="log_path" default="/tmp" />
+  <arg name="concepts_file" default="$(find mummer_dialogue)/etc/concepts.yaml" />
   
   <node name="chatbot" pkg="mummer_dialogue" type="rosie_fixed_rest.sh" output="screen" respawn="true"/>
   <node name="mummer_dialogue" pkg="mummer_dialogue" type="parser.py" args="--ip $(arg nao_ip) --port $(arg nao_port)" output="screen" respawn="true">
     <param name="semantic_map_name" type="string" value="$(arg semantic_map_name)"/>
     <param name="logging" type="bool" value="$(arg logging)"/>
     <param name="log_path" type="string" value="$(arg log_path)"/>
+    <param name="concepts_file" type="string" value="$(arg concepts_file)"/>
   </node>
   
 </launch>
