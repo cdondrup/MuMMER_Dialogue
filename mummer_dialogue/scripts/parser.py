@@ -31,6 +31,7 @@ import flask, requests
 from mummer_dialogue.msg import DialogueText
 from dynamic_reconfigure.server import Server as DynServer
 from mummer_dialogue.cfg import MummerDialogueConfig
+import yaml
 
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -542,6 +543,11 @@ def taskConsume():
         client.wait_for_server()
         client.send_goal_and_wait(EmptyGoal())
         log_robot("<selfie app>")
+    elif ALMemory.getData("ctxTask") == "quiz":
+        client = SimpleActionClient("/quiz_game", EmptyAction)
+        client.wait_for_server()
+        client.send_goal_and_wait(EmptyGoal())
+        log_robot("<quiz app>")
     else:
         say("Let me see. There are " + str(len(shopList.filteredCategory(ALMemory.getData("ctxTask")))) +
             " " + ALMemory.getData("ctxTask") + " shops nearby. " +
@@ -618,6 +624,9 @@ def getDistance(data):
 
     return distance
 
+def load_yaml_file(file_path):
+    with open(file_path, 'r') as f:
+        return yaml.load(f)
 
 def entryPoint():
     global goal
@@ -639,18 +648,18 @@ def entryPoint():
 #    ALSpeechRecognition.setParameter("NbHypotheses", 3)
     ALMemory = session.service("ALMemory")
     ALDialog = session.service("ALDialog")
-
+    
+    concepts =  load_yaml_file(rospy.get_param("~concepts_file"))["concepts"]
+    concepts = '\n'.join(['concept:(%s) [%s]' % (k,' '.join(v)) for k,v in concepts.items()])
+    concepts += '\n'
+    print repr(concepts)
+    
     topic_content = ('topic: ~example_topic_content()\n'
                      'language: enu\n'
-                     'concept:(bye) ["bye bye" Goodbye farewell "see you later" "see you" ]\n'
-                     'concept:(coffee) [coffee cappuccino latte espresso americano coffeeshop "coffee shop" coffeeshops "coffee shops"]\n'
-                     'concept:(shop) [starbucks costa coasta coastal public "hardware electronics" tesco primark "pc world" pcworld disco school premark]\n'
-                     'concept:(electronics) [iPhone Samsung case adapter television TV charger mobile phone]\n'
-                     'concept:(clothing) [clothes "clothing shop" "clothe shops" "clothing shops" shoes jacket "t-shirt" belt jeans trousers shirt underwear clothing dress skirt jumper]\n'
-                     'concept:(selfie) [selfie picture photo photograph]\n'
-                     'concept:(voucher) [discounts discount voucher sale sales bargain bargains "special offers" vulture]\n'
+                     +concepts+
                      'u: (_*~voucher{*}_~shop{*}) $tskFilled=True $ctxTask=voucherANDshop $shopName=$2 $usrEngChat=False $slotMissing=False\n'
                      'u: (_*~voucher{*}) $tskFilled=True $ctxTask=voucher $usrEngChat=False $slotMissing=True\n'
+                     'u: (_*~quiz{*}) $tskFilled=True $ctxTask=quiz $usrEngChat=False\n'
                      #'  u1: (* _~shop) $tskFilled=True $ctxTask=voucherANDshop $usrEngChat=False $slotMissing=False $shopName=$1 $slotMissing==True\n'
                      'u: (_*~selfie{*}) $tskFilled=True $ctxTask=selfie $usrEngChat=False\n'
                      #'u: ([e:FrontTactilTouched e:MiddleTactilTouched e:RearTactilTouched]) $ctxTask=voucherANDshop $slotMissing=False  testing $slotMissing==True\n'

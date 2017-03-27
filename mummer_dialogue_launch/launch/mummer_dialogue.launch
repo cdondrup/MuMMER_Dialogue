@@ -4,6 +4,7 @@
   <arg name="nao_port" default="$(optenv NAO_PORT 9559)" />
   <arg name="logging" default="false" />
   <arg name="log_path" default="/tmp" />
+  <arg name="concepts_file" default="$(find mummer_dialogue)/etc/concepts.yaml" />
   
   <include file="$(find dialogue_task_actions)/launch/dialogue_task_actions.launch">
     <arg name="semantic_map_name" value="$(arg semantic_map_name)" />    
@@ -14,6 +15,7 @@
     <arg name="semantic_map_name" value="$(arg semantic_map_name)"/>
     <arg name="logging" value="$(arg logging)"/>
     <arg name="log_path" value="$(arg log_path)"/>
+    <arg name="concepts_file" value="$(arg concepts_file)"/>
   </include>
   
 </launch>
