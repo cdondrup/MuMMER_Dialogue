@@ -32,6 +32,7 @@ from mummer_dialogue.msg import DialogueText
 from dynamic_reconfigure.server import Server as DynServer
 from mummer_dialogue.cfg import MummerDialogueConfig
 import yaml
+from mummer_dialogue.ConceptGenerator import ConceptGenerator
 
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -529,29 +530,31 @@ def taskConsume():
     global ALMemory
     print ALMemory.getData("shopName")
     print shopList.filteredSales().getShops()
-    if ALMemory.getData("ctxTask") == "voucherANDshop":
-        if ALMemory.getData("shopName") in shopList.filteredSales().getShops():
+    ctxTask = ALMemory.getData("ctxTask")
+    if ctxTask == "voucherANDshop":
+        shopName = ALMemory.getData("shopName")
+        if shopName in shopList.filteredSales().getShops():
             client = SimpleActionClient("/give_voucher", GiveVoucherAction)
             client.wait_for_server()
-            client.send_goal_and_wait(GiveVoucherGoal(shop_id=shopList.getId(ALMemory.getData("shopName"))))
-            log_robot("<voucher to " + ALMemory.getData("shopName") + ">")
+            client.send_goal_and_wait(GiveVoucherGoal(shop_id=shopList.getId(shopName)))
+            log_robot("<voucher to " + shopName + ">")
             ALMemory.insertData("slotMissing", "False")
         else:
             say("I am sorry, this shop does not have give any vouchers this period")
-    elif ALMemory.getData("ctxTask") == "selfie":
+    elif ctxTask == "selfie":
         client = SimpleActionClient("/take_picture", EmptyAction)
         client.wait_for_server()
         client.send_goal_and_wait(EmptyGoal())
         log_robot("<selfie app>")
-    elif ALMemory.getData("ctxTask") == "quiz":
+    elif ctxTask == "quiz":
         client = SimpleActionClient("/quiz_game", EmptyAction)
         client.wait_for_server()
         client.send_goal_and_wait(EmptyGoal())
         log_robot("<quiz app>")
     else:
-        say("Let me see. There are " + str(len(shopList.filteredCategory(ALMemory.getData("ctxTask")))) +
-            " " + ALMemory.getData("ctxTask") + " shops nearby. " +
-            "These are " + shopList.filteredCategory(ALMemory.getData("ctxTask")).enumShops() + ".")
+        say("Let me see. There are " + str(len(shopList.filteredCategory(ctxTask))) +
+            " " + ctxTask + " shops nearby. " +
+            "These are " + shopList.filteredCategory(ctxTask).enumShops() + ".")
 
         # print shopList.filteredCategory(ALMemory.getData("ctxTask")).enumShops()
 #        say("These are " + shopList.filteredCategory(ALMemory.getData("ctxTask")).enumShops() + ".")
@@ -649,10 +652,8 @@ def entryPoint():
     ALMemory = session.service("ALMemory")
     ALDialog = session.service("ALDialog")
     
-    concepts =  load_yaml_file(rospy.get_param("~concepts_file"))["concepts"]
-    concepts = '\n'.join(['concept:(%s) [%s]' % (k,' '.join(v)) for k,v in concepts.items()])
-    concepts += '\n'
-    print repr(concepts)
+    concepts = ConceptGenerator(rospy.get_param("~concepts_file")).generate(shopList)
+#    print repr(concepts)
     
     topic_content = ('topic: ~example_topic_content()\n'
                      'language: enu\n'
