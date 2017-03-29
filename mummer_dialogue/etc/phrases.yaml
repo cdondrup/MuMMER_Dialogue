@@ -1,0 +1,32 @@
+chat_disabled:
+  - "I am afraid I cannot help you with that."
+  - "I am sorry but I cannot help you with that yet."
+greet:
+  - "Hi"
+  - "Hello"
+  - "Hey there"
+goodbye:
+  - "Goodbye"
+  - "Have a nice day"
+  - "See you later"
+  - "Bye-bye"
+thinking:
+  - "Let me see"
+  - "Just a second"
+  - "Let me check my database"
+sales: # Can have two fields: num_shops, shop_list
+  - "There are %(num_shops)s shops that have sales nearby. These are %(shop_list)s."
+  - "Yes, there are %(shop_list)s."
+  - "Currently, %(shop_list)s are giving vouchers."
+no_sales:
+  - "I am sorry, this shop does not give any vouchers at the moment."
+  - "I am sorry, this shop does not have any special offers at the moment."
+shop_info: # Can have three fields: num_shops, type_shop, shop_list
+  - "There are %(num_shops)s %(type_shop)s shops nearby. These are %(shop_list)s."
+  - "There are %(shop_list)s nearby."
+  - "Yes, there are %(type_shop)s shops closeby. These are %(shop_list)s."
+request_task:
+  - "Is there anything I can help you with?"
+  - "Do you require assistance?"
+  - "May I be of service?"
+  - "What can I do you for?"
