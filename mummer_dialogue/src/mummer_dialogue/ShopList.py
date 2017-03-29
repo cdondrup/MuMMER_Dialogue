@@ -13,14 +13,17 @@ class ShopList(list):
         if not empty:
             for entry in db:
                 shop = Shop(
-                    int(entry['shop_id']), 
-                    entry['shopName'].lower(), 
-                    entry['category'].lower(),
-                    entry['directions'], 
-                    self.str2bool(entry['sales'])
+                    id=int(entry['shop_id']), 
+                    name=entry['shopName'].lower(), 
+                    category=entry['category'].lower(),
+                    directions=entry['directions'], 
+                    sales=self.str2bool(entry['sales']),
+                    name_synonyms=entry["shopNameSynonyms"],
+                    category_synonyms=entry["categorySynonyms"],
+                    sold_items=entry["soldItems"]
                 )
                 self.append(shop)
-                print shop.getName()
+                print shop.getName(),':',shop.getNames()
 
     def filteredCategory(self, cat):
         new = ShopList(empty=True)
@@ -35,18 +38,9 @@ class ShopList(list):
     #                self.remove(s)
     #        return self
 
-    #lowercase the shopname first
     def getShop(self, shopName):
-        if shopName.lower() == "pcworld":
-            shopName = "pc world"
-        elif shopName.lower() in ("disco","school"):
-            shopName = "tesco"
-        elif shopName.lower() in ("coasta","coastal"):
-            shopName = "costa"
-        elif shopName.lower() in ("premark",):
-            shopName = "primark"
         for s in self:
-            if s.getName() == shopName.lower():
+            if shopName.lower() in s.getNames():
                 return s
 
     def enumShops(self):
@@ -77,6 +71,13 @@ class ShopList(list):
             new.append(s.getName())
 
         return new
+    
+    def getUniqueCategories(self):
+        ret = []        
+        for s in self:
+            if not s.getCategory() in ret:
+                ret.append(s.getCategory())
+        return ret
     
     def str2bool(self, s):
         s = s.lower()

@@ -4,7 +4,8 @@
   <arg name="nao_port" default="$(optenv NAO_PORT 9559)" />
   <arg name="logging" default="false" />
   <arg name="log_path" default="/tmp" />
-  <arg name="concepts_file" default="$(find mummer_dialogue)/etc/concepts.yaml" />
+  <arg name="concepts_file" default="$(find mummer_dialogue)/etc/static_concepts.yaml" />
+  <arg name="phrases_file" default="$(find mummer_dialogue)/etc/phrases.yaml" />
   <arg name="quiz_app" default="quiz-9dde66/behavior_1" />
   
   <include file="$(find dialogue_task_actions)/launch/dialogue_task_actions.launch">
@@ -18,6 +19,7 @@
     <arg name="logging" value="$(arg logging)"/>
     <arg name="log_path" value="$(arg log_path)"/>
     <arg name="concepts_file" value="$(arg concepts_file)"/>
+    <arg name="phrases_file" value="$(arg phrases_file)"/>
   </include>
   
 </launch>

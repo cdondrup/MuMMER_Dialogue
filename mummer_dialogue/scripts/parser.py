@@ -32,6 +32,8 @@ from mummer_dialogue.msg import DialogueText
 from dynamic_reconfigure.server import Server as DynServer
 from mummer_dialogue.cfg import MummerDialogueConfig
 import yaml
+from mummer_dialogue.ConceptGenerator import ConceptGenerator
+import numpy as np
 
 
 signal.signal(signal.SIGINT, signal.SIG_DFL)
@@ -51,6 +53,7 @@ topic_name = None
 # ALTracker = None
 ALSpeechRecognition = None
 pplperc = None
+phrases = None
 
 rosSubscriber = None
 rosMessagetimeStamp = None
@@ -85,7 +88,11 @@ asrconf = []
 # Action dictionary
 actionID = {"taskConsume": 1, "Greet": 2, "Goodbye": 3, "Chat": 4, "giveDirections": 5, "wait": 6, "confirm": 7,
             "requestTask": 8, "requestShop": 9}
-
+            
+# Phrase categories
+(CHAT_DISABLED, GREET, GOODBYE, THINKING, SALES, NO_SALES, SHOP_INFO, REQUEST_TASK) = ("chat_disabled", "greet", "goodbye", "thinking", "sales", "no_sales", "shop_info", "request_task")
+# Phrase slots
+(NUM_SHOPS, TYPE_SHOP, SHOP_LIST) = ("num_shops", "type_shop", "shop_list")
 
 #### Action selection function
 def action(state):
@@ -220,6 +227,9 @@ def __call_service(srv_name, srv_type, req):
             rospy.sleep(1.)
         else:
             return s(req)
+
+def select_phrase(category):
+    return np.random.choice(phrases[category])
 
 
 def say(text):
@@ -481,17 +491,17 @@ def chat(sentence, disable = False):
             except Exception:
                 pass
         else:
-            say("I am afraid I cannot help you with that.")
+            say(select_phrase(CHAT_DISABLED))
     except RuntimeError:
         print "error in chatbot"
 
 
 def greet():
-    say("Hi")
+    say(select_phrase(GREET))
 
 
 def goodbye():
-    say("Have a nice day")
+    say(select_phrase(GOODBYE))
     clean_up()
 
 
@@ -503,7 +513,7 @@ def confirm():
 
 
 def giveDirections():
-    say("Let me see.")
+    say(select_phrase(THINKING))
     client = SimpleActionClient("/route_description_goal_server", RouteDescriptionGoalServerAction)
     client.wait_for_server()
     client.send_goal_and_wait(RouteDescriptionGoalServerGoal(shop_id=shopList.getId(ALMemory.getData("shopName"))))
@@ -516,8 +526,12 @@ def giveDirections():
 
 
 def requestShop():
-    say("There are " + str(len(shopList.filteredSales())) + " shops that have sales nearby. These are " 
-    + shopList.filteredSales().enumShops())
+    slots = {
+        NUM_SHOPS: str(len(shopList.filteredSales())),
+        SHOP_LIST: shopList.filteredSales().enumShops()
+    }
+    say(select_phrase(SALES) % slots)
+    
 #    say("These are " + shopList.filteredSales().enumShops())
     # say("Which shop would you like to get a voucher for?")
     ALMemory.insertData("ctxTask", "")
@@ -529,29 +543,34 @@ def taskConsume():
     global ALMemory
     print ALMemory.getData("shopName")
     print shopList.filteredSales().getShops()
-    if ALMemory.getData("ctxTask") == "voucherANDshop":
-        if ALMemory.getData("shopName") in shopList.filteredSales().getShops():
+    ctxTask = ALMemory.getData("ctxTask")
+    if ctxTask == "voucherANDshop":
+        shopName = ALMemory.getData("shopName")
+        if shopName in shopList.filteredSales().getShops():
             client = SimpleActionClient("/give_voucher", GiveVoucherAction)
             client.wait_for_server()
-            client.send_goal_and_wait(GiveVoucherGoal(shop_id=shopList.getId(ALMemory.getData("shopName"))))
-            log_robot("<voucher to " + ALMemory.getData("shopName") + ">")
+            client.send_goal_and_wait(GiveVoucherGoal(shop_id=shopList.getId(shopName)))
+            log_robot("<voucher to " + shopName + ">")
             ALMemory.insertData("slotMissing", "False")
         else:
-            say("I am sorry, this shop does not have give any vouchers this period")
-    elif ALMemory.getData("ctxTask") == "selfie":
+            say(select_phrase(NO_SALES))
+    elif ctxTask == "selfie":
         client = SimpleActionClient("/take_picture", EmptyAction)
         client.wait_for_server()
         client.send_goal_and_wait(EmptyGoal())
         log_robot("<selfie app>")
-    elif ALMemory.getData("ctxTask") == "quiz":
+    elif ctxTask == "quiz":
         client = SimpleActionClient("/quiz_game", EmptyAction)
         client.wait_for_server()
         client.send_goal_and_wait(EmptyGoal())
         log_robot("<quiz app>")
     else:
-        say("Let me see. There are " + str(len(shopList.filteredCategory(ALMemory.getData("ctxTask")))) +
-            " " + ALMemory.getData("ctxTask") + " shops nearby. " +
-            "These are " + shopList.filteredCategory(ALMemory.getData("ctxTask")).enumShops() + ".")
+        slots = {
+            NUM_SHOPS: str(len(shopList.filteredCategory(ctxTask))),
+            SHOP_LIST: shopList.filteredCategory(ctxTask).enumShops(),
+            TYPE_SHOP: ctxTask
+        }
+        say(select_phrase(SHOP_INFO) % slots)
 
         # print shopList.filteredCategory(ALMemory.getData("ctxTask")).enumShops()
 #        say("These are " + shopList.filteredCategory(ALMemory.getData("ctxTask")).enumShops() + ".")
@@ -562,7 +581,7 @@ def taskConsume():
     print "Shop Name: ", ALMemory.getData("shopName")
 
 def requestTask():
-    say("Is there anything I can help you with?")
+    say(select_phrase(REQUEST_TASK))
 
 
 def wait():
@@ -649,10 +668,11 @@ def entryPoint():
     ALMemory = session.service("ALMemory")
     ALDialog = session.service("ALDialog")
     
-    concepts =  load_yaml_file(rospy.get_param("~concepts_file"))["concepts"]
-    concepts = '\n'.join(['concept:(%s) [%s]' % (k,' '.join(v)) for k,v in concepts.items()])
-    concepts += '\n'
-    print repr(concepts)
+    global phrases
+    phrases = load_yaml_file(rospy.get_param("~phrases_file"))
+    print phrases
+    concepts = ConceptGenerator(rospy.get_param("~concepts_file")).generate(shopList)
+#    print repr(concepts)
     
     topic_content = ('topic: ~example_topic_content()\n'
                      'language: enu\n'
