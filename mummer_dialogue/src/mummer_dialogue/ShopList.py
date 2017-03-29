@@ -6,6 +6,8 @@ Created on Tue Oct 11 13:49:48 2016
 """
 
 from Shop import Shop
+from pprint import pprint
+import unicodedata
 
 
 class ShopList(list):
@@ -24,6 +26,7 @@ class ShopList(list):
                 )
                 self.append(shop)
                 print shop.getName(),':',shop.getNames()
+                pprint(entry)
 
     def filteredCategory(self, cat):
         new = ShopList(empty=True)
@@ -31,7 +34,17 @@ class ShopList(list):
             if s.getCategory() == cat:
                 new.append(s)
         return new
-
+    
+    def robust_decode(self, bs):
+        '''Takes a byte string as param and convert it into a unicode one.
+    First tries UTF8, and fallback to Latin1 if it fails'''
+        cr = None
+        try:
+            cr = bs.decode('utf8')
+        except UnicodeDecodeError:
+            cr = bs.decode('latin1')
+        return cr
+        
     #    def filteredCategory(self, cat):
     #        for s in self:
     #            if s.getCategory() != cat:
@@ -39,11 +52,13 @@ class ShopList(list):
     #        return self
 
     def getShop(self, shopName):
+        shopName = self.robust_decode(shopName)
         for s in self:
             if shopName.lower() in s.getNames():
                 return s
 
     def enumShops(self):
+        if len(self) == 0: return "none"        
         res = ""
         for i in self[:-1]:
             res += " " + i.getName() + ", "
