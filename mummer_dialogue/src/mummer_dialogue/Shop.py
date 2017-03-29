@@ -16,7 +16,7 @@ class Shop:
         try:
             self.name_synonyms = [x.lower() for x in json.loads(name_synonyms)]
         except ValueError as e:
-            rospy.logdebug(e)
+            rospy.logwarn(e)
             self.names = [self.name]
         else:
             self.names = self.name_synonyms
@@ -25,7 +25,7 @@ class Shop:
         try:
             self.category_synonyms = [x.lower() for x in json.loads(category_synonyms)]
         except ValueError as e:
-            rospy.logdebug(e)
+            rospy.logwarn(e)
             self.categories = [self.category]
         else:
             self.categories = self.category_synonyms
@@ -35,7 +35,7 @@ class Shop:
         try:
             self.sold_items = [x.lower() for x in json.loads(sold_items)]
         except ValueError as e:
-            rospy.logdebug(e)
+            rospy.logwarn(e)
             self.sold_items = []
 
     def getId(self):

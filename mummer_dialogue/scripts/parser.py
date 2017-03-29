@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+# -*- coding: utf-8 -*-0
 
 import qi
 import json
@@ -672,7 +673,7 @@ def entryPoint():
     phrases = load_yaml_file(rospy.get_param("~phrases_file"))
     print phrases
     concepts = ConceptGenerator(rospy.get_param("~concepts_file")).generate(shopList)
-#    print repr(concepts)
+    print concepts
     
     topic_content = ('topic: ~example_topic_content()\n'
                      'language: enu\n'

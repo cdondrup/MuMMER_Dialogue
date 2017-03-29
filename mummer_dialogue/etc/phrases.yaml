@@ -22,9 +22,9 @@ no_sales:
   - "I am sorry, this shop does not give any vouchers at the moment."
   - "I am sorry, this shop does not have any special offers at the moment."
 shop_info: # Can have three fields: num_shops, type_shop, shop_list
-  - "There are %(num_shops)s %(type_shop)s shops nearby. These are %(shop_list)s."
-  - "There are %(shop_list)s nearby."
-  - "Yes, there are %(type_shop)s shops closeby. These are %(shop_list)s."
+  - "I found %(num_shops)s matches. These are %(shop_list)s."
+  - "There are %(shop_list)s."
+  - "Yes, there are some close by. These are %(shop_list)s."
 request_task:
   - "Is there anything I can help you with?"
   - "Do you require assistance?"

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import yaml
+from pprint import pprint
 
 
 class ConceptGenerator(object):
@@ -17,15 +18,17 @@ class ConceptGenerator(object):
             shops.extend(s.getNames())
         self.__concepts_dict["shop"] = [x for x in self.qichat_hack(set(shops))]
         for c in shop_list.getUniqueCategories():
+            print c
             f = shop_list.filteredCategory(c)
             categories = []            
             for s in f:
+                print "Categories:",s.getCategories()
                 categories.extend(s.getCategories())
                 categories.extend(s.getSoldItems())
             self.__concepts_dict[c] = [x for x in self.qichat_hack(set(categories))]
         concepts = '\n'.join(['concept:(%s) [%s]' % (k,' '.join(v)) for k,v in self.__concepts_dict.items()])
         concepts += '\n'
-#        print self.__concepts_dict
+        pprint(self.__concepts_dict)
         return concepts
         
     def qichat_hack(self, l):
