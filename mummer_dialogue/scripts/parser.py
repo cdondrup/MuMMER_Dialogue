@@ -662,7 +662,7 @@ def entryPoint():
     
     if logging:
         global logfile
-        logfile = open(logpath + "/" + str(time.time())+ ("_w_chatbot" if chat_enabled else "_wo_chatbot") + ".log", "w")
+        logfile = open(logpath + "/" + str(time.time())+ ("_w_chatbot" if chat_enabled else "_wo_chatbot") + ".log", "w", 0)
 
     ALSpeechRecognition = session.service("ALSpeechRecognition")
 #    ALSpeechRecognition.setParameter("NbHypotheses", 3)

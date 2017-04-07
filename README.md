@@ -1,6 +1,8 @@
 # MuMMER Dialogue
 This is the dialogue module for MuMMER, which fires up once Pepper reaches the selected to interact user. It follows the same behaviour as in [this video](https://www.youtube.com/watch?v=hKjLpCEzzX8) (currently), combining a chotbot with an MDP learned policy for action selection.
 
+For installtion and usage instructions, please visit: http://protolab.aldebaran.com:9000/mummer/documentations/wikis/wp4-demo-system and http://protolab.aldebaran.com:9000/mummer/documentations/wikis/wp4_dialogue_usage
+
 ### Structure:
 - **action:** The ros action for invoking the dialogue
 - **scripts:** Main script of the module. Entry point
